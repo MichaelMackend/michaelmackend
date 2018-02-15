@@ -1,7 +1,7 @@
-#PROBLEM
+# PROBLEM
 
 this is a problem
 
-#SOLUTION
+## SOLUTION
 
 this is a solution
