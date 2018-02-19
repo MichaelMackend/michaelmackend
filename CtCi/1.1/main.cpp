@@ -1,6 +1,7 @@
 #include <iostream>
+#include "test.h"
 
 int main(void) {
 
-	std::cout << "Hello Michael and Caleb!" << std::endl;
+	std::cout << talk() << std::endl;
 }
