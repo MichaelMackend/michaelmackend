@@ -1,0 +1,17 @@
+
+executable = app
+
+output = ./bin/
+
+sources = $(wildcard *.cpp)
+
+objects = $(patsubst %.cpp,$(output)%.o,$(sources))
+
+$(output)$(executable) : $(objects)
+	g++ -g $(objects) -o $(output)$(executable)
+
+$(output)%.o : %.cpp
+	g++ -g -c $< -o $@
+
+clean : 
+	rm -fdr $(output)$(executable) $(objects)

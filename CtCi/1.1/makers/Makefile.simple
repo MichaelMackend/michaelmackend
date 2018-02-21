@@ -6,7 +6,7 @@ output = ./bin/
 objects := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 $(executable) : $(objects)
-	g++ -o $(executable) $(objects) 
+	g++ -ggdb -o $(executable) $(objects) 
 
 clean : 
 	rm -fdr $(executable) $(objects)
