@@ -1,5 +1,20 @@
 #include <iostream>
+#include "isunique.h"
+
+void testString(const char* str) {
+    std::cout << "String: \"";
+    std::cout << str << "\" is ";
+    if(isUnique(str)) {
+        std::cout << "unique!" << std::endl;
+    } else {
+        std::cout << "NOT unique!" << std::endl;
+    }
+}
+
 
 int main(void) {
-	std::cout << "Hello, World!" << std::endl;
+
+    testString("hello");
+    testString("helpo");
+
 }
