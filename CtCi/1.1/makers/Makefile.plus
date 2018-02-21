@@ -16,4 +16,4 @@ $(output)%.o : %.cpp
 	g++ -g -c $< -o $@
 
 clean : 
-	rm -fdr $(output)$(executable) $(objects)
+	rm -fdr $(output)

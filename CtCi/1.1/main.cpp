@@ -1,6 +1,5 @@
 #include <iostream>
-#include "test.h"
 
 int main(void) {
-	std::cout << talk() << std::endl;
+	std::cout << "Hello, World!" << std::endl;
 }
