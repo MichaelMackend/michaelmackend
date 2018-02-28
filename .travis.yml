@@ -1,2 +1,7 @@
 
 language: cpp
+
+env:
+  - TEST_DIR=1.4
+  
+script: cd $TEST_DIR && ./configure && make && make test
