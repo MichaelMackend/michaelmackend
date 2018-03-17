@@ -2,6 +2,6 @@
 language: cpp
 
 env:
-  - TEST_DIR=CtCi/1.4
-  
-script: cd $TEST_DIR && autoreconf -fiv && ./configure && make && make check
+  - TEST_DIR=CtCi/1.1
+
+script: cd $TEST_DIR && make && make test
