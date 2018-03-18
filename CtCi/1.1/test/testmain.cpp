@@ -4,4 +4,5 @@
 TEST_CASE( "Strings are unique", "[isunique]" ) {
     REQUIRE( 1 == 1 );
     REQUIRE( 1 == 2 );
+    REQUIRE( 1 == 3 );
 }
