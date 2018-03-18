@@ -1,5 +1,8 @@
 
 SERVER_TARGET = app
+SERVER_DRIVER = appsrc/main.cpp
+SERVER_OBJECT = build/main.o
+
 
 CC = g++
 CFLAGS = -std=c++11
@@ -23,12 +26,12 @@ TESTSOURCES = $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
 
 OBJECTS = $(patsubst $(SRCDIR)%,$(BUILDDIR)%,$(SOURCES:.$(SRCEXT)=.o))
 
-#objects : 
+#objects :
 #	@echo "OBJECTS=$(OBJECTS)"
 
 TESTOBJECTS = $(patsubst $(TESTDIR)%,$(BUILDDIR)%,$(TESTSOURCES:.$(SRCEXT)=.o))
 
-#testobjects : 
+#testobjects :
 #	@echo "TESTOBJECTS=$(TESTOBJECTS)"
 
 INCLUDE = -I include
@@ -36,24 +39,24 @@ INCLUDE = -I include
 LIB = -L lib
 
 $(SERVER_TARGET) : $(OBJECTS)
-	@echo " Linking... "
 	@mkdir -p $(OUTPUT)
-	$(CC) $(CFLAGS) -g $(OBJECTS) -o $(OUTPUT)$(SERVER_TARGET)
+	$(CC) $(CFLAGS) -g $(INCLUDE) -c $(SERVER_DRIVER) -o $(SERVER_OBJECT)
+	$(CC) $(CFLAGS) -g $(SERVER_OBJECT) $(OBJECTS) -o $(OUTPUT)$(SERVER_TARGET)
 
 $(BUILDDIR)%.o : $(SRCDIR)%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) -g -c $^ -o $@
+	$(CC) $(CFLAGS) -g $(INCLUDE) -c $^ -o $@
 
 clean :
 	rm -fdr $(OUTPUT) $(BUILDDIR)
 
-tester: $(TESTOBJECTS)
+tester: $(TESTOBJECTS) $(OBJECTS)
 	@mkdir -p $(OUTPUT)
-	$(CC) $(CFLAGS) -g $(TESTOBJECTS) $(INCLUDE) $(LIB) -o $(OUTPUT)tester
+	$(CC) $(CFLAGS) -g $(TESTOBJECTS) $(OBJECTS) $(LIB) -o $(OUTPUT)tester
 
 $(BUILDDIR)%.o : $(TESTDIR)%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) -g -c $^ -o $@
+	$(CC) $(CFLAGS) -g $(INCLUDE) -c $^ -o $@
 
 test : tester
 	./bin/tester
