@@ -12,23 +12,23 @@ SRCEXT = cpp
 
 SOURCES = $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 
-sources :
-	@echo "SOURCES=$(SOURCES)"
+#sources :
+#	@echo "SOURCES=$(SOURCES)"
 
 TESTSOURCES = $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
 
-testsources :
-	@echo "TESTSOURCES=$(TESTSOURCES)"
+#testsources :
+#	@echo "TESTSOURCES=$(TESTSOURCES)"
 
 OBJECTS = $(patsubst $(SRCDIR)%,$(BUILDDIR)%,$(SOURCES:.$(SRCEXT)=.o))
 
-objects : 
-	@echo "OBJECTS=$(OBJECTS)"
+#objects : 
+#	@echo "OBJECTS=$(OBJECTS)"
 
 TESTOBJECTS = $(patsubst $(TESTDIR)%,$(BUILDDIR)%,$(TESTSOURCES:.$(SRCEXT)=.o))
 
-testobjects : 
-	@echo "TESTOBJECTS=$(TESTOBJECTS)"
+#testobjects : 
+#	@echo "TESTOBJECTS=$(TESTOBJECTS)"
 
 INCLUDE = -I include
 
