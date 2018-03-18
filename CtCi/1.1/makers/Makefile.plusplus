@@ -1,0 +1,60 @@
+
+SERVER_TARGET = app
+
+CC = g++
+
+OUTPUT = bin/
+BUILDDIR = build/
+SRCDIR = src/
+TESTDIR = test/
+
+SRCEXT = cpp
+
+SOURCES = $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+
+sources :
+	@echo "SOURCES=$(SOURCES)"
+
+TESTSOURCES = $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
+
+testsources :
+	@echo "TESTSOURCES=$(TESTSOURCES)"
+
+OBJECTS = $(patsubst $(SRCDIR)%,$(BUILDDIR)%,$(SOURCES:.$(SRCEXT)=.o))
+
+objects : 
+	@echo "OBJECTS=$(OBJECTS)"
+
+TESTOBJECTS = $(patsubst $(TESTDIR)%,$(BUILDDIR)%,$(TESTSOURCES:.$(SRCEXT)=.o))
+
+testobjects : 
+	@echo "TESTOBJECTS=$(TESTOBJECTS)"
+
+INCLUDE = -I include
+
+LIB = -L lib
+
+$(SERVER_TARGET) : $(OBJECTS)
+	@echo " Linking... "
+	@mkdir -p $(OUTPUT)
+	$(CC) -g $(OBJECTS) -o $(OUTPUT)$(SERVER_TARGET)
+
+$(BUILDDIR)%.o : $(SRCDIR)%.$(SRCEXT)
+	@mkdir -p $(BUILDDIR)
+	$(CC) -g -c $^ -o $@
+
+clean :
+	rm -fdr $(OUTPUT) $(BUILDDIR)
+
+tester: $(TESTOBJECTS)
+	@mkdir -p $(OUTPUT)
+	$(CC) -g $(TESTOBJECTS) $(INCLUDE) $(LIB) -o $(OUTPUT)tester
+
+$(BUILDDIR)%.o : $(TESTDIR)%.$(SRCEXT)
+	@mkdir -p $(BUILDDIR)
+	$(CC) -g -c $^ -o $@
+
+test : tester
+	./bin/tester
+
+
