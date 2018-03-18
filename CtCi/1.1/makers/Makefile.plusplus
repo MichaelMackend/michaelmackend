@@ -2,6 +2,7 @@
 SERVER_TARGET = app
 
 CC = g++
+CFLAGS = -std=c++11
 
 OUTPUT = bin/
 BUILDDIR = build/
@@ -37,22 +38,22 @@ LIB = -L lib
 $(SERVER_TARGET) : $(OBJECTS)
 	@echo " Linking... "
 	@mkdir -p $(OUTPUT)
-	$(CC) -g $(OBJECTS) -o $(OUTPUT)$(SERVER_TARGET)
+	$(CC) $(CFLAGS) -g $(OBJECTS) -o $(OUTPUT)$(SERVER_TARGET)
 
 $(BUILDDIR)%.o : $(SRCDIR)%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
-	$(CC) -g -c $^ -o $@
+	$(CC) $(CFLAGS) -g -c $^ -o $@
 
 clean :
 	rm -fdr $(OUTPUT) $(BUILDDIR)
 
 tester: $(TESTOBJECTS)
 	@mkdir -p $(OUTPUT)
-	$(CC) -g $(TESTOBJECTS) $(INCLUDE) $(LIB) -o $(OUTPUT)tester
+	$(CC) $(CFLAGS) -g $(TESTOBJECTS) $(INCLUDE) $(LIB) -o $(OUTPUT)tester
 
 $(BUILDDIR)%.o : $(TESTDIR)%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
-	$(CC) -g -c $^ -o $@
+	$(CC) $(CFLAGS) -g -c $^ -o $@
 
 test : tester
 	./bin/tester
