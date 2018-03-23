@@ -1,6 +1,9 @@
 
 language: cpp
 
+before_install:
+  - sudo apt-get install libcpprest-dev
+
 env:
   - TEST_DIR=CtCi/1.1
 
