@@ -36,6 +36,8 @@ int main(void) {
 void handle_get(http_request request)
 {
     std::cout << "GET!" << std::endl;
+    std::cout << "TEST" << std::endl;
+    std::cout << "Michael" << std::endl;
 
 //   json::value::field_map answer;
 /*
