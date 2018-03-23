@@ -1,4 +1,8 @@
 
+os: linux
+
+dist: xenial
+
 language: cpp
 
 before_install:
@@ -9,3 +13,4 @@ env:
   - TEST_DIR=CtCi/1.1
 
 script: cd $TEST_DIR && make && make test
+
