@@ -1,6 +1,10 @@
 #ifndef H_arrayListType
 #define H_arrayListType
 
+#include <iostream>
+
+using namespace std;
+
 template <class elemType>
 class arrayListType  
 {
