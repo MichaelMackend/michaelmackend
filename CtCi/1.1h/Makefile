@@ -38,7 +38,7 @@ INCLUDE = -I include
 
 LIBDIR = -L lib
 
-LIB =
+LIB = -lpthread
 
 all : $(SERVER_TARGET) tester
 
