@@ -13,10 +13,10 @@ using namespace std;
 
 int main()
 {
-	addressBookType entries[500];
+	addressBookType* entries = new addressBookType[500];
 
-	cin.get();
-	cin.get();
+	//cin.get();
+	//cin.get();
     return 0;
 }
 

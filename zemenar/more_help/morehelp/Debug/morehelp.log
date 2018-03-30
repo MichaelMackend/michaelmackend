@@ -1,0 +1,11 @@
+﻿  Mackend_CS325_ch5ex1.cpp
+c:\users\micha\documents\github\michaelmackend\zemenar\more_help\mackend_cs325_ch5ex1.cpp(23): warning C4101: 'birthMonthSelect': unreferenced local variable
+c:\users\micha\documents\github\michaelmackend\zemenar\more_help\mackend_cs325_ch5ex1.cpp(22): warning C4101: 'relSelect': unreferenced local variable
+c:\users\micha\documents\github\michaelmackend\zemenar\more_help\unorderedlinkedlist.h(94): warning C4101: 'trailCurent': unreferenced local variable
+  c:\users\micha\documents\github\michaelmackend\zemenar\more_help\unorderedlinkedlist.h(92): note: while compiling class template member function 'void unorderedLinkedList<extPersonType>::deleteNode(const Type &)'
+          with
+          [
+              Type=extPersonType
+          ]
+  c:\users\micha\documents\github\michaelmackend\zemenar\more_help\adressbooktypel.h(18): note: see reference to class template instantiation 'unorderedLinkedList<extPersonType>' being compiled
+  morehelp.vcxproj -> C:\Users\micha\Documents\GitHub\michaelmackend\zemenar\more_help\morehelp\Debug\morehelp.exe
