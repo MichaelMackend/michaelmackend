@@ -13,7 +13,9 @@ $(output)$(executable) : $(objects)
 
 $(output)%.o : %.cpp
 	@mkdir -p $(output)
-	g++ -g -std=c++11 -c $< -o $@
+	g++ -g -c $< -o $@
 
 clean : 
 	rm -fdr $(output)
+
+test : 
