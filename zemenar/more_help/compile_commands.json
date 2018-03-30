@@ -1,0 +1,7 @@
+[
+    {
+        "command": "c++ -c -g -std=c++11 -o bin/Mackend_CS325_ch5ex1.o /home/michael/Projects/michaelmackend/zemenar/more_help/Mackend_CS325_ch5ex1.cpp",
+        "directory": "/home/michael/Projects/michaelmackend/zemenar/more_help",
+        "file": "/home/michael/Projects/michaelmackend/zemenar/more_help/Mackend_CS325_ch5ex1.cpp"
+    }
+]

@@ -201,7 +201,7 @@ void linkedListType<Type>::copyList(const linkedListType<Type>& otherList)
 
 		//copy the first node:
 		first = new nodeType<Type>; //create the new node
-		first->info = current->info //copy the info
+		first->info = current->info; //copy the info
 		first->link == NULL; //set the link field of the node to NULL
 		last = first;                   //make last point to the first node
 		current = current->link; //make current point to the next node
