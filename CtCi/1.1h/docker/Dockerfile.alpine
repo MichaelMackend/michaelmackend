@@ -1,0 +1,13 @@
+FROM alpine:3.6
+#RUN apk update&& apk add --no-cache g++ make git musl-dev gnutls gnutls-dev gnutls-c++
+RUN \
+    echo "@edge http://nl.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
+    apk update && \
+    apk --no-cache --update upgrade musl && \
+    apk --no-cache --update add \
+    g++ make git gnutls gnutls-dev gnutls-c++ musl musl-dev
+COPY . /deploy
+WORKDIR /deploy
+RUN make app
+CMD ["./bin/app"]
+

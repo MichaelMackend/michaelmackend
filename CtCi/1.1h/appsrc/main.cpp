@@ -32,7 +32,6 @@ void post(const Request& req, Response& res) {
         std::cout << it.key() << " : " << it.value() << std::endl;
     }
 
-
     auto keyiter = j.find("word");
     if(keyiter != j.end()) {
         std::string word = *keyiter;
@@ -58,7 +57,7 @@ int main(void) {
 
     svr.post("/", post);
 
-    svr.listen("localhost", 13370);
+    svr.listen("0.0.0.0", 13370);
 
     return 0;
 }

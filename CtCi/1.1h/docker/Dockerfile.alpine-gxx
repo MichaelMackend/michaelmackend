@@ -1,0 +1,8 @@
+FROM frolvlad/alpine-gcc
+RUN apk add --no-cache g++ make
+COPY . /deploy
+WORKDIR /deploy
+RUN make app
+CMD ["./bin/app"]
+
+
