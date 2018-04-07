@@ -1,0 +1,20 @@
+#!/bin/bash
+
+usage=$(echo "./mmnew.sh [cpp] [service] [target folder]")
+
+if [ $# -ne 3 ]; then
+    echo $usage
+    exit
+fi
+
+type=$1
+language=$2
+target=$3
+
+mkdir -p $target
+
+cp -d templates/$language/$type $target
+
+pushd $target
+ls
+

@@ -1,0 +1,16 @@
+#!/bin/bash
+tmux=$(which tmux)
+nvim=$(which nvim)
+
+if [ ! "$tmux" ]; then
+    sudo apt install tmux
+fi
+
+if [ ! "$nvim" ]; then
+	sudo apt-get install software-properties-common
+	sudo add-apt-repository ppa:neovim-ppa/stable
+	sudo apt-get update
+	sudo apt-get install neovim
+fi
+
+
