@@ -18,7 +18,7 @@ int main(void) {
 
     std::cout << "starting..." << std::endl;
 
-    utility::string_t address = U("http://localhost:1337");
+    utility::string_t address = U("http://0.0.0.0:1337");
 
     http_listener listener(address + U("/isunique"));
 
