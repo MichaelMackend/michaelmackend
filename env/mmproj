@@ -7,13 +7,13 @@ if [ $# -ne 3 ]; then
     exit
 fi
 
-type=$1
-language=$2
+language=$1
+projtype=$2
 target=$3
 
 mkdir -p $target
 
-cp -d templates/$language/$type $target
+cp -T -f -r templates/$language/$projtype/ $target
 
 pushd $target
 ls

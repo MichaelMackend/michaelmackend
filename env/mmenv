@@ -13,4 +13,3 @@ if [ ! "$nvim" ]; then
 	sudo apt-get install neovim
 fi
 
-
