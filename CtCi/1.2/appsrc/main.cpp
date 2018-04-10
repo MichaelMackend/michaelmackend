@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <exception>
-#include "isunique.h"
+#include "ispermutation.h"
 #include "httplib.h"
 #include "nlohmann/json.hpp"
 
@@ -25,16 +25,24 @@ void post(const Request& req, Response& res) {
             std::cout << it.key() << " : " << it.value() << std::endl;
         }
 
-        auto keyiter = j.find("word");
-        if(keyiter != j.end()) {
-            std::string word = *keyiter;
+        auto firstIter = j.find("first");
+        auto secondIter = j.find("second");
+        if(firstIter != j.end() && secondIter != j.end()) {
 
-            bool result = isUnique(word.c_str());
+            std::string first = *firstIter;
+            std::string second = *secondIter;
+
+            bool result = isPermutation(first.c_str(), second.c_str());
 
             json j;
-            j["word"] = word;
-            j["isUnique"] = result;
+            j["first"] = first;
+            j["second"] = second;
+            j["isPermutation"] = result;
 
+            res.set_content( j.dump(), "application/json");
+        } else {
+            json j;
+            j["exception"] = "JSON Request did not contain required values";
             res.set_content( j.dump(), "application/json");
         }
     }
@@ -56,7 +64,7 @@ int main(void) {
 
     Server svr(httplib::HttpVersion::v1_1);
 
-    svr.post("/CtCI/1.1", post);
+    svr.post("/CtCI/1.2", post);
 
     svr.listen("0.0.0.0", 1337);
 
