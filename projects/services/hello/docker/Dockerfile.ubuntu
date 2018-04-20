@@ -4,5 +4,6 @@ COPY . /deploy
 WORKDIR /deploy
 RUN make app
 CMD ["./bin/app"]
+EXPOSE 80
 
 

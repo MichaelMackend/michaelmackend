@@ -6,3 +6,11 @@ RUN make app
 CMD ["./bin/app"]
 
 
+FROM ubuntu:16.04
+RUN apt-get update && apt-get --assume-yes install make g++
+COPY . /deploy
+WORKDIR /deploy
+RUN make app
+ENTRYPOINT ["./bin/app"]
+
+
