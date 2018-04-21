@@ -1,3 +1,0 @@
-hardstatus on
-hardstatus alwayslastline
-hardstatus string "%{.kw}%-w%{= kR}(%{r}%n %t%{-}%{= kR})%?%{= .kw}%+w%? %{.kw}%=%c %d/%m/%Y" #B&W & date&time
