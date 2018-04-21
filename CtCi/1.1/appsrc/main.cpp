@@ -56,9 +56,11 @@ int main(void) {
 
     Server svr(httplib::HttpVersion::v1_1);
 
-    svr.post("/CtCI/1.1", post);
+    svr.post("/",post);
 
-    svr.listen("0.0.0.0", 1337);
+    if(!svr.listen("0.0.0.0",80)) {
+        std::cout << "Failed to start server!" << std::endl;
+    }
 
     return 0;
 }

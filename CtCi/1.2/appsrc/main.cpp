@@ -64,9 +64,9 @@ int main(void) {
 
     Server svr(httplib::HttpVersion::v1_1);
 
-    svr.post("/CtCI/1.2", post);
+    svr.post("/", post);
 
-    svr.listen("0.0.0.0", 1337);
+    svr.listen("0.0.0.0", 80);
 
     return 0;
 }
