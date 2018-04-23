@@ -23,8 +23,8 @@ $('form').submit(function(event) {
     event.preventDefault();
     var form = $( this ).serializeFormJSON();
     var formstring = JSON.stringify(form);
-    $.post("/ctci_1_1_app/", formstring, function(data) {
-       console.log(data); 
+    $.post("/ctci/1.1/", formstring, function(data) {
+       console.log(data);
        if(data.isUnique) {
            $('.results').html("UNIQUE!");
        } else {

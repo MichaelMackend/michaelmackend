@@ -10,10 +10,10 @@ services:
       labels:
         - "traefik.backend=ctci_1_1_app"
         - "traefik.port=80"
-        - "traefik.frontend.rule=PathPrefixStrip:/ctci_1_1_app/"
+        - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.1/;Method:POST"
         - "traefik.docker.network=traefik_public"
   web:
-    image: michaelmackend/ctci_web_1_1:v2.2
+    image: michaelmackend/ctci_web_1_1:v2.3
     networks:
       - traefik_public
     deploy:
@@ -21,7 +21,7 @@ services:
       labels:
         - "traefik.backend=ctci_1_1_web"
         - "traefik.port=80"
-        - "traefik.frontend.rule=PathPrefixStrip:/ctci_1_1_web/"
+        - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.1/;Method:GET"
         - "traefik.docker.network=traefik_public"
 networks:
   traefik_public:
