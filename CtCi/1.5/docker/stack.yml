@@ -1,14 +1,14 @@
 version: "3"
 
 services:
-  app:
-    image: michaelmackend/ctci_1_2:v2
+  api:
+    image: michaelmackend/ctci_api_1_2:v2
     networks:
       - traefik_public
     deploy:
       replicas: 1
       labels:
-        - "traefik.backend=ctci_1_2_app"
+        - "traefik.backend=ctci_1_2_api"
         - "traefik.port=80"
         - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.2/;Method:POST"
         - "traefik.docker.network=traefik_public"
