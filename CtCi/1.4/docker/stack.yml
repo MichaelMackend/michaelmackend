@@ -2,26 +2,26 @@ version: "3"
 
 services:
   app:
-    image: michaelmackend/ctci_1_2:v2
+    image: michaelmackend/ctci_1_4:v1
     networks:
       - traefik_public
     deploy:
       replicas: 1
       labels:
-        - "traefik.backend=ctci_1_2_app"
+        - "traefik.backend=ctci_1_4_app"
         - "traefik.port=80"
-        - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.2/;Method:POST"
+        - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.4/;Method:POST"
         - "traefik.docker.network=traefik_public"
   web:
-    image: michaelmackend/ctci_web_1_2:v1.2
+    image: michaelmackend/ctci_web_1_4:v1
     networks:
       - traefik_public
     deploy:
       replicas: 1
       labels:
-        - "traefik.backend=ctci_1_2_web"
+        - "traefik.backend=ctci_1_4_web"
         - "traefik.port=80"
-        - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.2/;Method:GET"
+        - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.4/;Method:GET"
         - "traefik.docker.network=traefik_public"
 networks:
   traefik_public:
