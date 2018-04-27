@@ -1,7 +1,6 @@
 #include <iostream>
 #include <sstream>
 #include <exception>
-#include "isunique.h"
 #include "httplib.h"
 #include "nlohmann/json.hpp"
 
@@ -11,8 +10,6 @@ using json = nlohmann::json;
 void post(const Request& req, Response& res) {
 
     std::string body = req.body;
-//    std::string header =  r;
-//    std::cout << "HEADER: " << header << std::endl;
     std::cout << "BODY: " << body << std::endl;
 
     try {
@@ -25,15 +22,12 @@ void post(const Request& req, Response& res) {
             std::cout << it.key() << " : " << it.value() << std::endl;
         }
 
-        auto keyiter = j.find("word");
+        auto keyiter = j.find("name");
         if(keyiter != j.end()) {
-            std::string word = *keyiter;
-
-            bool result = isUnique(word.c_str());
+            std::string name = *keyiter;
 
             json j;
-            j["word"] = word;
-            j["isUnique"] = result;
+            j["reply"] = "Hello, " + name;
 
             res.set_content( j.dump(), "application/json");
         }
