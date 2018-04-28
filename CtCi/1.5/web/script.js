@@ -23,12 +23,12 @@ $('form').submit(function(event) {
     event.preventDefault();
     var form = $( this ).serializeFormJSON();
     var formstring = JSON.stringify(form);
-    $.post("/ctci/1.1/", formstring, function(data) {
+    $.post("/ctci/1.5/", formstring, function(data) {
        console.log(data);
-       if(data.isUnique) {
-           $('.results').html("UNIQUE!");
+       if(data.isoneeditaway) {
+           $('.results').html("ONE KEYSTROKE OR LESS!");
        } else {
-           $('.results').html("Not unique.");
+           $('.results').html("I'm not sure how much but... more than one keystroke.  I'd give it up.");
        }
     });
 });

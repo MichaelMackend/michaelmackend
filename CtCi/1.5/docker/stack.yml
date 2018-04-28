@@ -13,7 +13,7 @@ services:
         - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.5/;Method:POST"
         - "traefik.docker.network=traefik_public"
   web:
-    image: michaelmackend/ctci_web_1_5:v1
+    image: michaelmackend/ctci_web_1_5:v2
     networks:
       - traefik_public
     deploy:
