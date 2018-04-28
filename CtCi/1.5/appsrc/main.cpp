@@ -1,39 +1,35 @@
 #include <iostream>
 #include <sstream>
 #include <exception>
-#include "isunique.h"
 #include "httplib.h"
 #include "nlohmann/json.hpp"
+#include "isoneeditaway.h"
 
 using namespace httplib;
 using json = nlohmann::json;
 
 void post(const Request& req, Response& res) {
 
-    std::string body = req.body;
-//    std::string header =  r;
-//    std::cout << "HEADER: " << header << std::endl;
-    std::cout << "BODY: " << body << std::endl;
-
     try {
         json j;
-        j = j.parse(body);
+        j = j.parse(req.body);
 
-        std::cout << "jbody: " << j.dump(4) << std::endl;
+        auto fromKey = j.find("from");
+        auto toKey = j.find("to");
 
-        for(auto it = j.begin(); it != j.end(); ++it) {
-            std::cout << it.key() << " : " << it.value() << std::endl;
+        if(fromKey == j.end() || toKey == j.end()) {
+            json j;
+            j["badformat"] = "Query must include a from and a to.";
+
+            res.set_content( j.dump(), "application.json");
+            return;
         }
 
-        auto keyiter = j.find("word");
-        if(keyiter != j.end()) {
-            std::string word = *keyiter;
-
-            bool result = isUnique(word.c_str());
-
+        {
+            std::string from = *fromKey;
+            std::string to = *toKey;
             json j;
-            j["word"] = word;
-            j["isUnique"] = result;
+            j["isoneeditaway"] = isOneEditAway(from.c_str(),to.c_str());
 
             res.set_content( j.dump(), "application/json");
         }
