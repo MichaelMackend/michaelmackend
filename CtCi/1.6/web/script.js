@@ -23,12 +23,12 @@ $('form').submit(function(event) {
     event.preventDefault();
     var form = $( this ).serializeFormJSON();
     var formstring = JSON.stringify(form);
-    $.post("/ctci/1.1/", formstring, function(data) {
+    $.post("/ctci/1.6/", formstring, function(data) {
        console.log(data);
-       if(data.isUnique) {
-           $('.results').html("UNIQUE!");
+       if(compressed in data) {
+           $('.results').html(data.compressed);
        } else {
-           $('.results').html("Not unique.");
+           $('.results').html("Something went wrong.");
        }
     });
 });
