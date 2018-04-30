@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdexcept>
+#include <ctype.h>
 
 
 void recordCharacterAndCount(char letter, int count, char* buffer, int& offset) {
@@ -47,6 +48,9 @@ class SimpleCompressor {
         void forEachCharacterInTheInput(void (*action)(SimpleCompressor* compressor)) {
             for(int i = 0; i < inputLength; ++i) {
                 readIndex = i;
+                if(!isalpha(input[i])) {
+                    throw std::invalid_argument("string");
+                }
                 action(this);
             }
         }
@@ -57,10 +61,6 @@ class SimpleCompressor {
             }
 
             if(input[readIndex] != currentChar) {
-                return true;
-            }
-
-            if(readIndex == inputLength - 1) {
                 return true;
             }
 
@@ -106,6 +106,7 @@ class SimpleCompressor {
                     c->incrementTheCurrentCharacter();
                 }
             });
+            recordCharacterAndCount();
 
             return (const char*)returnCompressedString();
         }
