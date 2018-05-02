@@ -45,3 +45,39 @@ function onRotateMatrixClicked() {
         console.log(response);
     });
 }
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+
+function onGenerateTable() {
+    var input = document.querySelector("input");
+    var size = input.value;
+
+    var grid = document.createElement("data-grid");
+    grid.setAttribute("rows",0);
+    grid.style.width = "300px";
+    grid.style.height = "300px";
+
+
+    var parent = document.querySelector("#gridHolder");
+    while (parent.firstChild) {
+        parent.removeChild(parent.firstChild);
+    }
+    parent.appendChild(grid);
+
+    var data = {
+        gridSize: size,
+        values: []
+    };
+
+    var count = size * size;
+    for(var i = 0; i < count; ++i) {
+        data.values.push(getRandomInt(100));
+    }
+
+    grid.setData(data);
+}
+
+
+

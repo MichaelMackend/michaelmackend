@@ -4,12 +4,17 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="script.js"></script>
   <script src="grid.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h3>CtCI 1.7</h3>
   <p>Our product populates a table of numeric values and then rotates them! Never be without a rotated table again!</p>
   <p>Try it for FREE!</p>
-  <data-grid rows="5" style="width:300px; height:300px"></data-grid>
+  <label for="tableSize">Table Size [1-20]</label>
+  <input id="tableSize" type="number" min="1" max="20">
+  <button onClick="onGenerateTable()">Populate!</button>
+  <div id="gridHolder"></div>
+  <!--  <data-grid rows="5" style="width:300px; height:300px"></data-grid> -->
   <br>
   <br>
   <button onClick="onRotateMatrixClicked()">Rotate!</button>

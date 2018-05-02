@@ -25,7 +25,7 @@
                 border: 0;
                 margin: 0;
                 padding: 0;
-                color: blue;
+                color: cyan;
                 background: gray;
                 width:33%;
                 height:33%;
@@ -54,10 +54,10 @@
 
         setData(data) {
 
-            initializeGridWithSize(data.gridSize);
-
-            for(var i = 0; i < data.values; ++i) {
-                setInputValue(i, data.values[i]);
+            this.initializeGridWithSize(data.gridSize);
+            var count = data.gridSize * data.gridSize;
+            for(var i = 0; i < count; ++i) {
+                this.setInputValue(i, data.values[i]);
             }
         }
 
@@ -94,13 +94,20 @@
             var N = rows*rows;
             var inputSize = (100.0 * (1.0 / rows)) + "%";
 
+            var odd = 1 - (rows % 2);
+
+            var row = 0;
             for(var i = 0; i < N; ++i) {
+
+                var row = Math.floor(i / rows);
+                var oddRow = odd & (row % 2);
+                console.log("i " + i + " ,row " + row + ", odd " + odd + ": " + (i % 2) + " == " + (row % 2));
                 var inputElement = this.containerDiv.appendChild(document.createElement('input'));
                 inputElement.setAttribute("type","number");
                 inputElement.style.width = inputSize;
                 inputElement.style.height = inputSize;
                 inputElement.classList.add("no-spinners")
-                inputElement.style.backgroundColor = (i % 2) == 0 ? "lightgray" : "gray";
+                inputElement.style.backgroundColor = ((i + odd) % 2) == oddRow ? "darkgray" : "gray";
             }
 
             this.inputs = this.shadowRoot.querySelectorAll("input");
