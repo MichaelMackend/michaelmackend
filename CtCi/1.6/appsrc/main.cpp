@@ -37,14 +37,10 @@ void post(const Request& req, Response& res) {
         res.set_content( reply.dump(), "application/json");
     }
     catch(nlohmann::detail::exception e) {
-        json j;
-        j["exception"] = e.what();
-        res.set_content( j.dump(), "application/json");
+        res.status = 400;
     }
     catch(std::exception e) {
-        json j;
-        j["exception"] = "std::exception";
-        res.set_content( j.dump(), "application/json");
+        res.status = 400;
     }
 }
 
