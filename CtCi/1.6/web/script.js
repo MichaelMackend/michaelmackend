@@ -25,7 +25,7 @@ $('form').submit(function(event) {
     var formstring = JSON.stringify(form);
     $.post("/ctci/1.6/", formstring, function(data) {
        console.log(data);
-       if(compressed in data) {
+       if("compressed" in data) {
            $('.results').html(data.compressed);
        } else {
            $('.results').html("Something went wrong.");
