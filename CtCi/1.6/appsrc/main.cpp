@@ -32,7 +32,8 @@ void post(const Request& req, Response& res) {
         std::string stringArg = *keyiter;
 
         json reply;
-        reply["compressed"] = compressString(stringArg.c_str());
+        const char* result = compressString(stringArg.c_str());
+        reply["compressed"] = result;
 
         res.set_content( reply.dump(), "application/json");
     }
