@@ -26,7 +26,7 @@ class SimpleCompressor {
                 throw std::invalid_argument("inputString");
             }
 
-            inputLength = strlen(input);
+            inputLength = strlen(input) + 1;
 
         }
         const char* input = nullptr;
@@ -48,6 +48,9 @@ class SimpleCompressor {
         void forEachCharacterInTheInput(void (*action)(SimpleCompressor* compressor)) {
             for(int i = 0; i < inputLength; ++i) {
                 readIndex = i;
+                if(input[i] == '\0') {
+                    return;
+                }
                 if(!isalpha(input[i])) {
                     throw std::invalid_argument("string");
                 }
