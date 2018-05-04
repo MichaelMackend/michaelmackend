@@ -1,8 +1,11 @@
 #include <iostream>
 #include <sstream>
 #include <exception>
+#include <string>
+#include <vector>
 #include "httplib.h"
 #include "nlohmann/json.hpp"
+#include "rotate.h"
 
 using namespace httplib;
 using json = nlohmann::json;
@@ -16,31 +19,32 @@ void post(const Request& req, Response& res) {
         json j;
         j = j.parse(body);
 
-        std::cout << "jbody: " << j.dump(4) << std::endl;
+        auto sizeIter = j.find("gridSize");
+        auto valuesIter = j.find("values");
 
-        for(auto it = j.begin(); it != j.end(); ++it) {
-            std::cout << it.key() << " : " << it.value() << std::endl;
+        if(sizeIter == j.end() || valuesIter == j.end()) {
+            throw std::invalid_argument("json was invalid");
         }
 
-        auto keyiter = j.find("name");
-        if(keyiter != j.end()) {
-            std::string name = *keyiter;
-
-            json j;
-            j["reply"] = "Hello, " + name;
-
-            res.set_content( j.dump(), "application/json");
+        int size = *sizeIter;
+        std::cout << "Table Size: " << size << std::endl;
+        std::vector<int> values = *valuesIter;
+        for(auto i : values) {
+            std::cout << "Value: " << i << std::endl;
         }
+
+        std::vector<int> rotatedValues = rotateSquareMatrix(values, size);
+
+        j["values"] = rotatedValues;
+        res.set_content(j.dump(), "application/json");
     }
     catch(nlohmann::detail::exception e) {
-        json j;
-        j["exception"] = e.what();
-        res.set_content( j.dump(), "application/json");
+        std::cout << e.what() << std::endl;
+        res.status = 400;
     }
     catch(std::exception e) {
-        json j;
-        j["exception"] = "std::exception";
-        res.set_content( j.dump(), "application/json");
+        std::cout << e.what() << std::endl;
+        res.status = 400;
     }
 }
 

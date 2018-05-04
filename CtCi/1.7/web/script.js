@@ -37,12 +37,22 @@ $('form').submit(function(event) {
 
 function onRotateMatrixClicked() {
     console.log("Rotate Me Damn You!");
-    var data = document.querySelector('data-grid').getData();
+    var grid = document.querySelector('data-grid');
+    var data = grid.getData();
     console.log(data);
     var formstring = JSON.stringify(data);
     console.log(formstring);
     $.post("/ctci/1.7/", formstring, function(response) {
-        console.log(response);
+        grid.setData(response);
+    })
+    .done(function() {
+        console.log("second success" );
+    })
+    .fail(function() {
+        console.log( "error" );
+    })
+    .always(function() {
+        console.log( "finished" );
     });
 }
 
@@ -52,12 +62,12 @@ function getRandomInt(max) {
 
 function onGenerateTable() {
     var input = document.querySelector("input");
-    var size = input.value;
+    var size = input.valueAsNumber;
 
     var grid = document.createElement("data-grid");
     grid.setAttribute("rows",0);
-    grid.style.width = "300px";
-    grid.style.height = "300px";
+    grid.style.width = "400px";
+    grid.style.height = "400px";
 
 
     var parent = document.querySelector("#gridHolder");
@@ -75,6 +85,8 @@ function onGenerateTable() {
     for(var i = 0; i < count; ++i) {
         data.values.push(getRandomInt(100));
     }
+
+    console.log(data);
 
     grid.setData(data);
 }

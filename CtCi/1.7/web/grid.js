@@ -25,7 +25,7 @@
                 border: 0;
                 margin: 0;
                 padding: 0;
-                color: cyan;
+                color: white;
                 background: gray;
                 width:33%;
                 height:33%;
@@ -70,7 +70,7 @@
             data.gridSize = this.rows;
             var count = this.rows * this.rows;
             for(var i = 0; i < count; ++i) {
-                data.values.push(this.inputs[i].value);
+                data.values.push(this.inputs[i].valueAsNumber);
             }
             return data;
         }
