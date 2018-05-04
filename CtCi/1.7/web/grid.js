@@ -101,7 +101,6 @@
 
                 var row = Math.floor(i / rows);
                 var oddRow = odd & (row % 2);
-                console.log("i " + i + " ,row " + row + ", odd " + odd + ": " + (i % 2) + " == " + (row % 2));
                 var inputElement = this.containerDiv.appendChild(document.createElement('input'));
                 inputElement.setAttribute("type","number");
                 inputElement.style.width = inputSize;

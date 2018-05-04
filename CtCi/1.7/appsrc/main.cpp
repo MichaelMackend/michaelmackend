@@ -13,7 +13,6 @@ using json = nlohmann::json;
 void post(const Request& req, Response& res) {
 
     std::string body = req.body;
-    std::cout << "BODY: " << body << std::endl;
 
     try {
         json j;
@@ -27,15 +26,11 @@ void post(const Request& req, Response& res) {
         }
 
         int size = *sizeIter;
-        std::cout << "Table Size: " << size << std::endl;
         std::vector<int> values = *valuesIter;
-        for(auto i : values) {
-            std::cout << "Value: " << i << std::endl;
-        }
 
-        std::vector<int> rotatedValues = rotateSquareMatrix(values, size);
+        values = rotateSquareMatrix(values, size);
 
-        j["values"] = rotatedValues;
+        j["values"] = values;
         res.set_content(j.dump(), "application/json");
     }
     catch(nlohmann::detail::exception e) {
