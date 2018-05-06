@@ -1,8 +1,11 @@
 #include <iostream>
 #include <sstream>
 #include <exception>
+#include <string>
+#include <vector>
 #include "httplib.h"
 #include "nlohmann/json.hpp"
+#include "app.h"
 
 using namespace httplib;
 using json = nlohmann::json;
@@ -10,37 +13,29 @@ using json = nlohmann::json;
 void post(const Request& req, Response& res) {
 
     std::string body = req.body;
-    std::cout << "BODY: " << body << std::endl;
 
     try {
         json j;
         j = j.parse(body);
 
-        std::cout << "jbody: " << j.dump(4) << std::endl;
+        auto valuesIter = j.find("values");
 
-        for(auto it = j.begin(); it != j.end(); ++it) {
-            std::cout << it.key() << " : " << it.value() << std::endl;
+        if(valuesIter == j.end()) {
+            throw std::invalid_argument("json was invalid");
         }
 
-        auto keyiter = j.find("name");
-        if(keyiter != j.end()) {
-            std::string name = *keyiter;
+        appFunction();
 
-            json j;
-            j["reply"] = "Hello, " + name;
-
-            res.set_content( j.dump(), "application/json");
-        }
+        j["return"] = "hello";
+        res.set_content(j.dump(), "application/json");
     }
     catch(nlohmann::detail::exception e) {
-        json j;
-        j["exception"] = e.what();
-        res.set_content( j.dump(), "application/json");
+        std::cout << e.what() << std::endl;
+        res.status = 400;
     }
     catch(std::exception e) {
-        json j;
-        j["exception"] = "std::exception";
-        res.set_content( j.dump(), "application/json");
+        std::cout << e.what() << std::endl;
+        res.status = 400;
     }
 }
 

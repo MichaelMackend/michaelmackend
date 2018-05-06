@@ -1,22 +1,21 @@
 <html lang="en">
 <head>
-  <title>CtCI 1.1</title>
+  <title>CtCI 1.7</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="script.js"></script>
+  <script src="grid.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h3>CtCI 1.1</h3>
-  <p>Are all your word's characters unique?</p>
-  <p>Find out below!</p>
-  <form action="">
-    <label for="word">Enter your word:</label>
-    <input type="text" name="word">
-    <br><br>
-    <input type="submit">
-  </form>
-  <div>This word's characters are... </div>
-  <br>
-  <div class="results"></div>
+  <h3>CtCI 1.7</h3>
+  <p>Our product populates a table of numeric values and then rotates them! Never be without a rotated table again!</p>
+  <p>Try it for FREE!</p>
+  <label for="tableSize">Table Size [1-20]</label>
+  <input id="tableSize" type="number" min="1" max="20">
+  <button onClick="onGenerateTable()">Populate!</button>
+  <div id="gridHolder"></div>
+  <!--  <data-grid rows="5" style="width:300px; height:300px"></data-grid> -->
+  <button onClick="onRotateMatrixClicked()">Rotate!</button>
 </body>
 
 

@@ -2,9 +2,11 @@ version: "3"
 
 services:
   api:
-    image: michaelmackend/ctci_api_1_7:v3
+    image: michaelmackend/ctci_api_1_7:dev5
     networks:
       - traefik_public
+    volumes:
+      - ".:/deploy"
     deploy:
       replicas: 1
       labels:
@@ -13,9 +15,11 @@ services:
         - "traefik.frontend.rule=PathPrefixStrip:/ctci/1.7/;Method:POST"
         - "traefik.docker.network=traefik_public"
   web:
-    image: michaelmackend/ctci_web_1_7:v2
+    image: michaelmackend/ctci_web_1_7:dev
     networks:
       - traefik_public
+    volumes:
+      - "./web:/usr/share/nginx/html"
     deploy:
       replicas: 1
       labels:
