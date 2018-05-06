@@ -2,7 +2,7 @@ version: "3"
 
 services:
   api:
-    image: michaelmackend/ctci_api_1_7:v2
+    image: michaelmackend/ctci_api_1_7:v3
     networks:
       - traefik_public
     deploy:

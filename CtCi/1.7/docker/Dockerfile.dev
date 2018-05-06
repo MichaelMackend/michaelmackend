@@ -3,13 +3,13 @@ FROM phusion/baseimage:master
 
 #set up app service with runit
 RUN mkdir /etc/service/app
-COPY ctci_start.sh /etc/service/app/run
+COPY scripts/ctci_start.sh /etc/service/app/run
 RUN chmod +x /etc/service/app/run
 
 #this is a dev container. set appwatch to kill the app when the binary changes.
 RUN mkdir /etc/service/appwatch
-COPY dev/appwatch_start.sh /etc/service/appwatch/run
-COPY dev/appwatch.sh /etc/service/appwatch/appwatch.sh
+COPY scripts/appwatch_start.sh /etc/service/appwatch/run
+COPY scripts/appwatch.sh /etc/service/appwatch/appwatch.sh
 RUN chmod +x /etc/service/appwatch/appwatch.sh
 RUN chmod +x /etc/service/appwatch/run
 
