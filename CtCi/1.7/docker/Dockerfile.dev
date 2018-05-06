@@ -1,5 +1,6 @@
-#FROM ubuntu:16.04
 FROM phusion/baseimage:master
+RUN mkdir /etc/service/app
+COPY ctci_start.sh /etc/service/app/run
+RUN chmod +x /etc/service/app/run
 WORKDIR /deploy
 CMD ["/sbin/my_init"]
-#CMD ["/ctci_setup.sh"]
