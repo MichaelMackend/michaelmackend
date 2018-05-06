@@ -5,9 +5,6 @@ FINGERPRINT="/root/watchers/$SERVICE.md5"
 
 mkdir /root/watchers
 
-while true
-do
-
 fingerprint_expected=$(/usr/bin/md5sum "$FILE")
 
 if [ ! -e "$FINGERPRINT" ]
@@ -25,6 +22,3 @@ then
   kill $(ps -A | grep -2 app | awk '{print $1}')
 fi
 
-sleep 3
-
-done

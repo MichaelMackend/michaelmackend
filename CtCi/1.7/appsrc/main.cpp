@@ -25,7 +25,7 @@ void post(const Request& req, Response& res) {
             throw std::invalid_argument("json was invalid");
         }
 
-        int size = *sizeIter;
+        const int size = *sizeIter;
         std::vector<int> values = *valuesIter;
 
         values = rotateSquareMatrix(values, size);
