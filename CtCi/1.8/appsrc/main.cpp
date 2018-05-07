@@ -18,15 +18,19 @@ void post(const Request& req, Response& res) {
         json j;
         j = j.parse(body);
 
+        auto sizeIter = j.find("gridSize");
         auto valuesIter = j.find("values");
 
-        if(valuesIter == j.end()) {
+        if(valuesIter == j.end() || sizeIter == j.end()) {
             throw std::invalid_argument("json was invalid");
         }
 
-        appFunction();
+        const int size = *sizeIter;
+        std::vector<int> values = *valuesIter;
 
-        j["return"] = "hello";
+        std::vector<int> zeroed = zeroMatrix(*valuesIter, *sizeIter);
+
+        j["values"] = zeroed;
         res.set_content(j.dump(), "application/json");
     }
     catch(nlohmann::detail::exception e) {

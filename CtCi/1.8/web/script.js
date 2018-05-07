@@ -18,29 +18,11 @@
 })(jQuery);
 
 
-$(document).ready(function() {
-
-$('form').submit(function(event) {
-    event.preventDefault();
-    var form = $( this ).serializeFormJSON();
-    var formstring = JSON.stringify(form);
-    $.post("/ctci/1.?/", formstring, function(data) {
-       console.log(data);
-       if("return" in data) {
-           $('.results').html(data.return);
-       } else {
-           $('.results').html("Something went wrong.");
-       }
-    });
-});
-
-});
-
-function onRotateMatrixClicked() {
+function onZeroMatrixClicked() {
     var grid = document.querySelector('data-grid');
     var data = grid.getData();
     var formstring = JSON.stringify(data);
-    $.post("/ctci/1.7/", formstring, function(response) {
+    $.post("/ctci/1.8/", formstring, function(response) {
         grid.setData(response);
     })
     .done(function() {

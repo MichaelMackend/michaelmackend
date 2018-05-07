@@ -1,4 +1,6 @@
 #pragma once
 
+#include <vector>
 
-void appFunction();
+
+std::vector<int> zeroMatrix(const std::vector<int>& values, int dimension);
