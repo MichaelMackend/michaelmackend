@@ -1,0 +1,12 @@
+[
+    {
+        "command": "c++ -c -std=c++11 -g -I include -o build/intlist.o /home/michael/Projects/michaelmackend/CtCi/2.1/src/intlist.cpp",
+        "directory": "/home/michael/Projects/michaelmackend/CtCi/2.1",
+        "file": "/home/michael/Projects/michaelmackend/CtCi/2.1/src/intlist.cpp"
+    },
+    {
+        "command": "c++ -c -std=c++11 -g -I include -o build/main.o /home/michael/Projects/michaelmackend/CtCi/2.1/appsrc/main.cpp",
+        "directory": "/home/michael/Projects/michaelmackend/CtCi/2.1",
+        "file": "/home/michael/Projects/michaelmackend/CtCi/2.1/appsrc/main.cpp"
+    }
+]
