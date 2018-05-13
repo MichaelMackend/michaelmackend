@@ -30,13 +30,14 @@ std::string megasum(const std::string& s1, const std::string& s2) {
 
     int carry = 0;
     while(true) {
+        if(n1 == nullptr && n2 == nullptr) {
+            break;
+        }
+
         int v1 = n1 != nullptr ? n1->val : 0;
         int v2 = n2 != nullptr ? n2->val : 0;
 
         int sum = v1 + v2 + carry;
-        if(sum == 0) {
-            break;
-        }
 
         if(sum > 9) {
             carry = 1;
@@ -57,10 +58,19 @@ std::string megasum(const std::string& s1, const std::string& s2) {
 
     std::string result;
 
-    l3.forEach([&result](Node* node) {
-            result += '0' + (char)node->val;
-            });
+    bool sigDigitFound = false;
+    l3.forEach([&result, &sigDigitFound](Node* node) {
+            char digit = '0' + (char)node->val;
+            if(!sigDigitFound) {
+                if(digit  == '0') {
+                return;
+            } else {
+                sigDigitFound = true;
+            }
+        }
+        result += digit;
+    });
 
 
-    return result;
+return result;
 }
