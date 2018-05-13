@@ -1,21 +1,27 @@
 <html lang="en">
 <head>
-  <title>CtCI 1.7</title>
+  <title>CtCI 2.4e</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="script.js"></script>
   <script src="grid.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h3>CtCI 1.7</h3>
-  <p>Our product populates a table of numeric values and then rotates them! Never be without a rotated table again!</p>
-  <p>Try it for FREE!</p>
-  <label for="tableSize">Table Size [1-20]</label>
-  <input id="tableSize" type="number" min="1" max="20">
-  <button onClick="onGenerateTable()">Populate!</button>
-  <div id="gridHolder"></div>
-  <!--  <data-grid rows="5" style="width:300px; height:300px"></data-grid> -->
-  <button onClick="onRotateMatrixClicked()">Rotate!</button>
+  <h3>CtCI 2.4e</h3>
+  <p>Calculators.  Let's face it.  We've all used them.  Getting our rocks off on 8, 10, or 12 digit addition.  Pathetic.</p>
+  <p>I know what you're thinking.  "Hey! Like we have a choice! Got a better idea?!"</p>
+  <p>Actually, I do.  Behold the MEGASUM MACHINE!  Try it for FREE* today!</p>
+  <form action="">
+    <label for="val1">Enter first number:</label>
+    <input type="number" name="val1">
+    <br><br>
+    <label for="val2">Enter second number:</label>
+    <input type="number" name="val2">
+    <br><br>
+    <input type="submit">
+  </form>
+  <div id="result"></div>
+  <p>*carrier costs may apply.</p>
 </body>
 
 
