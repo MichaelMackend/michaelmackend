@@ -1,0 +1,58 @@
+
+APP_TARGET = app
+APP_DRIVER = src/main.cpp
+APP_OBJECT = build/main.o
+
+CC = g++
+CFLAGS = -std=c++11
+
+OUTPUT = bin/
+BUILDDIR = build/
+SRCDIR = src/
+TESTDIR = test/
+
+SRCEXT = cpp
+
+SOURCES = $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+
+sources :
+	@echo "SOURCES=$(SOURCES)"
+
+TESTSOURCES = $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
+
+testsources :
+	@echo "TESTSOURCES=$(TESTSOURCES)"
+
+OBJECTS = $(patsubst $(SRCDIR)%,$(BUILDDIR)%,$(SOURCES:.$(SRCEXT)=.o))
+
+objects :
+	@echo "OBJECTS=$(OBJECTS)"
+
+TESTOBJECTS = $(patsubst $(TESTDIR)%,$(BUILDDIR)%,$(TESTSOURCES:.$(SRCEXT)=.o))
+
+testobjects :
+	@echo "TESTOBJECTS=$(TESTOBJECTS)"
+
+INCLUDE = -I include
+
+LIBDIR = -L lib
+
+LIB = -lpthread -lunwind
+
+all : $(APP_TARGET) tester
+
+$(APP_TARGET) : $(OBJECTS)
+	@mkdir -p $(OUTPUT)
+	$(CC) $(OBJECTS) $(LIBDIR) $(LIB)  -o $(OUTPUT)$(APP_TARGET)
+
+$(BUILDDIR)%.o : $(SRCDIR)%.$(SRCEXT)
+	@mkdir -p $(BUILDDIR)
+	$(CC) $(CFLAGS) -g $(INCLUDE) -c $^ -o $@
+
+clean :
+	rm -fdr $(OUTPUT) $(BUILDDIR)
+
+
+#	$(CC) $(CFLAGS) -g $(INCLUDE) -c $(APP_DRIVER) -o $(APP_OBJECT)
+#
+

@@ -5,6 +5,7 @@
 #include <map>
 #include <stdexcept>
 #include <algorithm>
+#include <cstddef>
 #include "memoryallocator.h"
 
 
@@ -75,14 +76,14 @@ static const size_t kBlockSizes[] =
 
 static MemoryAllocator __a;
 
-void * operator new(size_t size) _THROW_BAD_ALLOC
+void * operator new(size_t size)
 {
     void * p = __a.Alloc(size);
     std::cout << "new created memory at " << p << std::endl;
     return p;
 }
 
-void operator delete(void * p) _NOEXCEPT
+void operator delete(void * p) noexcept
 {
     std::cout << "Delete operator freed memory at " << p << std::endl;
     __a.Free(p);
@@ -112,9 +113,16 @@ MemoryAllocator::MemoryAllocator()
         mBlockSizeLookupTable[i] = blockSizeIndex;
     }
 
-    for(auto allocRecordVector : mAllocationRecords) {
+    mAllocationRecords = (BlockAllocationVector*)malloc(sizeof(BlockAllocationVector) * ALLOC_TABLE_HASH_SIZE);
+    for(size_t i = 0; i < ALLOC_TABLE_HASH_SIZE; ++i) {
+        BlockAllocationVector* ar = mAllocationRecords + i;
+        new (mAllocationRecords + i)BlockAllocationVector;
+        ar->reserve(10);
+    }
+/*      for(auto allocRecordVector : mAllocationRecords) {
         allocRecordVector.reserve(10);
     }
+    */
 
     mMaxBlockSize = maxBlockSize;
 }
@@ -146,9 +154,7 @@ void MemoryAllocator::Free(void* p) {
     try {
         const size_t blockPtrAsValue = reinterpret_cast<std::size_t>(p);
         const size_t hashedBlockPtrValue = blockPtrAsValue % ALLOC_TABLE_HASH_SIZE;
-        //auto allocRecordIter = std::find(mAllocationRecords[hashedBlockPtrValue].begin(), mAllocationRecords[hashedBlockPtrValue].end()));
-        ///TODO: find the allocation record in the vector and use it to free the address.
-        mBlockAllocators[0].Free(p);
+        mBlockAllocators[hashedBlockPtrValue].Free(p);
     } catch(const std::invalid_argument& e) {
         std::cout << "MemoryAllocator::Free error for address: " << p << std::endl;
         PrintAddressAllocCallStack(p);

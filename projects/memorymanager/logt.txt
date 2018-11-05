@@ -1,0 +1,2 @@
+g++ -std=c++11 -g -I include -c src/memoryallocator.cpp -o build/memoryallocator.o
+Makefile:49: recipe for target 'build/memoryallocator.o' failed

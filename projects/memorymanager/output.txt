@@ -1,0 +1,12 @@
+g++ build/main.o build/backtrace.o build/bar.o build/memoryallocator.o -L lib -lpthread -lbacktrace  -o bin/app
+build/backtrace.o: In function `BackTrace::CreateBackTrace()':
+/home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp:19: undefined reference to `_Ux86_64_getcontext'
+/home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp:20: undefined reference to `_ULx86_64_init_local'
+/home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp:25: undefined reference to `_ULx86_64_step'
+build/backtrace.o: In function `BackTrace::Print() const':
+/home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp:50: undefined reference to `_ULx86_64_get_reg'
+/home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp:51: undefined reference to `_ULx86_64_get_reg'
+/home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp:56: undefined reference to `_ULx86_64_get_proc_name'
+collect2: error: ld returned 1 exit status
+Makefile:45: recipe for target 'app' failed
+make: *** [app] Error 1
