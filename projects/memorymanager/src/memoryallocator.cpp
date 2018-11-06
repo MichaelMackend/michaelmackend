@@ -113,11 +113,10 @@ MemoryAllocator::MemoryAllocator()
         mBlockSizeLookupTable[i] = blockSizeIndex;
     }
 
-    mAllocationRecords = (BlockAllocationVector*)malloc(sizeof(BlockAllocationVector) * ALLOC_TABLE_HASH_SIZE);
+    mAllocationRecords = (BlockAllocationMap*)malloc(sizeof(BlockAllocationMap) * ALLOC_TABLE_HASH_SIZE);
     for(size_t i = 0; i < ALLOC_TABLE_HASH_SIZE; ++i) {
-        BlockAllocationVector* ar = mAllocationRecords + i;
-        new (mAllocationRecords + i)BlockAllocationVector;
-        ar->reserve(10);
+        BlockAllocationMap* am = mAllocationRecords + i;
+        new (mAllocationRecords + i)BlockAllocationMap;
     }
 /*      for(auto allocRecordVector : mAllocationRecords) {
         allocRecordVector.reserve(10);
@@ -137,16 +136,21 @@ void* MemoryAllocator::Alloc(size_t size) {
     }
 
     if(size > mMaxBlockSize) {
-        return nullptr;
+        return malloc(size);
     }
 
     const size_t blockAllocatorIndex = mBlockSizeLookupTable[size];
     BlockAllocator* ba = mBlockAllocators + blockAllocatorIndex;
     void* block = ba->Alloc();
+
     const size_t blockPtrAsValue = reinterpret_cast<std::size_t>(block);
+
     mAllocatedPtrBackTraceMap[blockPtrAsValue] = BackTrace::CreateBackTrace();
+
     const size_t hashedBlockPtrValue = blockPtrAsValue % ALLOC_TABLE_HASH_SIZE;
-    mAllocationRecords[hashedBlockPtrValue].push_back(BlockAllocationRecord(block, ba));
+    BlockAllocationMap& thisMap = mAllocationRecords[hashedBlockPtrValue];
+    thisMap[blockPtrAsValue]=ba;
+
     return block;
 }
 
@@ -154,7 +158,13 @@ void MemoryAllocator::Free(void* p) {
     try {
         const size_t blockPtrAsValue = reinterpret_cast<std::size_t>(p);
         const size_t hashedBlockPtrValue = blockPtrAsValue % ALLOC_TABLE_HASH_SIZE;
-        mBlockAllocators[hashedBlockPtrValue].Free(p);
+
+        BlockAllocationMap& allocRecordMap = mAllocationRecords[hashedBlockPtrValue];
+        auto mapIter = allocRecordMap.find(blockPtrAsValue);
+        if(mapIter != allocRecordMap.end()) {
+            mapIter->second->Free(p);
+            allocRecordMap.erase(mapIter);
+        }
     } catch(const std::invalid_argument& e) {
         std::cout << "MemoryAllocator::Free error for address: " << p << std::endl;
         PrintAddressAllocCallStack(p);

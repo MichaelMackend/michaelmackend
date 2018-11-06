@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <vector>
 #include "mallocator11.h"
+#include "poolallocator11.h"
 
 
 class BlockAllocator;
@@ -30,13 +31,26 @@ private:
     void PrintAddressAllocCallStack(void* p);
     void* Alloc(size_t size);
     void Free(void* p);
+
     BlockAllocator *mBlockAllocators;
     std::size_t* mBlockSizeLookupTable;
     std::size_t mMaxBlockSize;
-    std::map<std::size_t, BackTrace, std::less<std::size_t>, Mallocator11<std::pair<const std::size_t, BackTrace> > > mAllocatedPtrBackTraceMap;
+    
+    typedef std::map<std::size_t, 
+            BackTrace, 
+            std::less<std::size_t>, 
+            Mallocator11<std::pair<const std::size_t, BackTrace> > > BackTraceMap;
+            
+    BackTraceMap mAllocatedPtrBackTraceMap;
+
     static const unsigned int ALLOC_TABLE_HASH_SIZE = 104729;
-    typedef std::vector<BlockAllocationRecord, Mallocator11<BlockAllocationRecord>> BlockAllocationVector;
-    BlockAllocationVector* mAllocationRecords;//[ALLOC_TABLE_HASH_SIZE];
+
+    typedef std::map<std::size_t, 
+                    BlockAllocator*, 
+                    std::less<std::size_t>, 
+                    PoolAllocator11<std::pair<const std::size_t, BlockAllocator*> > > BlockAllocationMap;
+
+    BlockAllocationMap* mAllocationRecords;
 };
 
 #endif // MEMORYALLOCATOR_H

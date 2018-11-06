@@ -37,7 +37,8 @@ INCLUDE = -I include
 
 LIBDIR = -L lib
 
-LIB = -lpthread -lunwind
+LIB = -lpthread
+#LIB += -lunwind
 
 all : $(APP_TARGET) tester
 
