@@ -12,7 +12,7 @@ class BlockAllocator;
 class BackTrace;
 struct AllocStack;
 struct BlockHeader;
-struct PageHeader;
+struct PageListHeader;
 struct BlockAllocationRecord;
 
 AllocStack backtrace();
@@ -23,10 +23,17 @@ public:
     MemoryAllocator();
     ~MemoryAllocator();
 
-    static void Initialize();
+    static void Initialize(std::size_t memory_budget);
+    void* GetBlockPage(std::size_t size);
+    void ReturnPage(void* p, std::size_t size);
 
 private:
-    friend void* operator new(size_t t);
+    void InitializeWithMemoryBudget(std::size_t memory_budget);
+    void InitializeBlockAllocators();
+    void InitializeMemoryPool(std::size_t memory_budget);
+    PageListHeader* FindMemoryBlockPageForSize(size_t size, PageListHeader **outPrevPage);
+    PageListHeader* FindPrevMemoryBlockPageLocationForAddress(void* p);
+    friend void *operator new(size_t t);
     friend void operator delete(void* p) noexcept;
     void PrintAddressAllocCallStack(void* p);
     void* Alloc(size_t size);
@@ -36,11 +43,17 @@ private:
     std::size_t* mBlockSizeLookupTable;
     std::size_t mMaxBlockSize;
     
-    typedef std::map<std::size_t, 
-            BackTrace, 
-            std::less<std::size_t>, 
-            Mallocator11<std::pair<const std::size_t, BackTrace> > > BackTraceMap;
-            
+    std::size_t mTotalMemoryBudget;
+    void* mMemoryPool;
+    
+    PageListHeader* mFreeMemoryList;
+    
+    typedef std::map<std::size_t,
+                         BackTrace,
+                         std::less<std::size_t>,
+                         Mallocator11<std::pair<const std::size_t, BackTrace>>>
+            BackTraceMap;
+
     BackTraceMap mAllocatedPtrBackTraceMap;
 
     static const unsigned int ALLOC_TABLE_HASH_SIZE = 104729;

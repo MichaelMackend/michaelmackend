@@ -15,16 +15,26 @@ const unsigned long MEGABYTE = 1024 * 1024;
 const unsigned long GIGABYTE = 1024 * 1024 * 1024;
 const unsigned long LARGE_PRIME = 104729;
 
-struct BlockHeader {
+const unsigned long CACHE_LINE_ALIGNMENT_SHIFT_BUFFER = 63;
+
+struct BlockHeader
+{
     BlockHeader* mNextBlock;
 };
 
 struct PageHeader {
     uint64_t mFreeBlocks;
     PageHeader* mNextPage;
+    signed char mCacheLineAlignmentOffset;
     BlockHeader* blockHead() {
         return reinterpret_cast<BlockHeader*>(this + 1);
     }
+};
+
+struct PageListHeader
+{
+    PageListHeader *mNextPage;
+    std::size_t mPageSize;
 };
 
 /*
@@ -33,8 +43,10 @@ struct PageHeader {
 class BlockAllocator
 {
 public:
-    BlockAllocator(size_t block_size = 64,
-                   size_t page_maxsize = MEGABYTE);
+    BlockAllocator(
+        MemoryAllocator* memAllocator,
+        size_t block_size = 64,
+        size_t page_maxsize = MEGABYTE);
 
     ~BlockAllocator();
 
@@ -46,6 +58,7 @@ private:
     void InitializePageBlocks(PageHeader* page);
     int GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader);
 
+    MemoryAllocator* mMemoryAllocator;
     PageHeader* mPageHead;
     size_t mBlockSize;
     size_t mPageSize;
@@ -89,45 +102,102 @@ void operator delete(void * p) noexcept
     __a.Free(p);
 }
 
-void MemoryAllocator::Initialize() {
+void MemoryAllocator::Initialize(std::size_t total_memory) {
     __a = MemoryAllocator();
+    __a.InitializeWithMemoryBudget(total_memory);
 }
 
-MemoryAllocator::MemoryAllocator()
-{
+void MemoryAllocator::InitializeWithMemoryBudget(std::size_t memory_budget) {
+
+    InitializeMemoryPool(memory_budget);
+    InitializeBlockAllocators();
+}
+
+void MemoryAllocator::InitializeMemoryPool(std::size_t memory_budget) {
+    mTotalMemoryBudget = memory_budget;
+    mMemoryPool = malloc(mTotalMemoryBudget);
+    mFreeMemoryList = (PageListHeader*)mMemoryPool;
+    mFreeMemoryList->mNextPage = nullptr;
+    mFreeMemoryList->mPageSize = mTotalMemoryBudget;
+}
+
+void MemoryAllocator::InitializeBlockAllocators() {
     const int numBlockSizes = sizeof(kBlockSizes) / sizeof(kBlockSizes[0]);
     const int maxBlockSize = kBlockSizes[numBlockSizes - 1];
 
-    mBlockAllocators = reinterpret_cast<BlockAllocator*>(malloc(numBlockSizes * sizeof(BlockAllocator)));
-    for(int i = 0; i < numBlockSizes; ++i) {
+    mBlockAllocators = reinterpret_cast<BlockAllocator *>(malloc(numBlockSizes * sizeof(BlockAllocator)));
+    for (int i = 0; i < numBlockSizes; ++i)
+    {
         //mBlockAllocators[i] = BlockAllocator(kBlockSizes[i]);
-        new (mBlockAllocators + i)BlockAllocator(kBlockSizes[i]);
+        new (mBlockAllocators + i) BlockAllocator(this, kBlockSizes[i]);
     }
 
-    mBlockSizeLookupTable = reinterpret_cast<size_t*>(malloc((maxBlockSize + 1) * sizeof(size_t)));
+    mBlockSizeLookupTable = reinterpret_cast<size_t *>(malloc((maxBlockSize + 1) * sizeof(size_t)));
     size_t blockSizeIndex = 0;
-    for(size_t i = 0; i < maxBlockSize; ++i) {
-        if(i > kBlockSizes[blockSizeIndex]) {
+    for (size_t i = 0; i < maxBlockSize; ++i)
+    {
+        if (i > kBlockSizes[blockSizeIndex])
+        {
             blockSizeIndex++;
         }
         mBlockSizeLookupTable[i] = blockSizeIndex;
     }
 
-    mAllocationRecords = (BlockAllocationMap*)malloc(sizeof(BlockAllocationMap) * ALLOC_TABLE_HASH_SIZE);
-    for(size_t i = 0; i < ALLOC_TABLE_HASH_SIZE; ++i) {
-        BlockAllocationMap* am = mAllocationRecords + i;
-        new (mAllocationRecords + i)BlockAllocationMap;
+    mAllocationRecords = (BlockAllocationMap *)malloc(sizeof(BlockAllocationMap) * ALLOC_TABLE_HASH_SIZE);
+    for (size_t i = 0; i < ALLOC_TABLE_HASH_SIZE; ++i)
+    {
+        BlockAllocationMap *am = mAllocationRecords + i;
+        new (mAllocationRecords + i) BlockAllocationMap;
     }
-/*      for(auto allocRecordVector : mAllocationRecords) {
-        allocRecordVector.reserve(10);
-    }
-    */
 
     mMaxBlockSize = maxBlockSize;
 }
 
-MemoryAllocator::~MemoryAllocator() {
+PageListHeader* MemoryAllocator::FindMemoryBlockPageForSize(size_t size, PageListHeader** outPrevPage) {
+    ///todo find the memory block we need
+    return nullptr;
+}
 
+void* MemoryAllocator::GetBlockPage(std::size_t requestedSize) {
+
+    ///todo consider handling of getting the head page.  what does that do the mFreeList pointer?
+    std::size_t actualAllocSize = requestedSize + (requestedSize % 64);
+    PageListHeader* prevPage = nullptr;
+    PageListHeader* pageToAlloc = FindMemoryBlockPageForSize(requestedSize, &prevPage);
+    PageListHeader* newFreeBlock = new (reinterpret_cast<char*>(pageToAlloc) + actualAllocSize) PageListHeader;
+    if(prevPage != nullptr) {
+        prevPage->mNextPage = newFreeBlock;
+    }
+    newFreeBlock->mNextPage = pageToAlloc->mNextPage;
+    newFreeBlock->mPageSize = pageToAlloc->mPageSize - actualAllocSize;
+    return nullptr;
+}
+
+PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void* p) {
+    ///todo find the memory block we need
+    return nullptr;
+}
+
+void MemoryAllocator::ReturnPage(void *p, std::size_t requestedSize)
+{
+    std::size_t actualAllocSize = requestedSize + (requestedSize % 64);
+    PageListHeader* prev = FindPrevMemoryBlockPageLocationForAddress(p);
+    PageListHeader* newReturnedPage = new (p)PageListHeader;
+    newReturnedPage->mNextPage = ///figure out how to handle the edge cases where we are the new head or tail etc.
+    
+    ///todo insert the returned page where it belongs
+    if (prev != nullptr)
+    {
+        prev->mNextPage = newReturnedPage;
+    }
+    
+}
+
+MemoryAllocator::MemoryAllocator()
+{ }
+
+MemoryAllocator::~MemoryAllocator() { 
+    free(mMemoryPool);
 }
 
 void* MemoryAllocator::Alloc(size_t size) {
@@ -182,12 +252,12 @@ void MemoryAllocator::PrintAddressAllocCallStack(void* p) {
     }
 }
 
-BlockAllocator::BlockAllocator(size_t block_size,
-                               size_t page_maxSize)
-    : mPageHead(nullptr)
+BlockAllocator::BlockAllocator( MemoryAllocator* memAllocator, size_t block_size, size_t page_maxSize)
+    : mMemoryAllocator(memAllocator)
+    , mPageHead(nullptr)
     , mBlockSize(block_size)
     , mPageSize(std::min(64 * block_size, page_maxSize))
-    , mAllocatedPageSize(mPageSize + sizeof(PageHeader))
+    , mAllocatedPageSize(mPageSize + sizeof(PageHeader) + CACHE_LINE_ALIGNMENT_SHIFT_BUFFER)
     , mBlocksPerPage(mPageSize / mBlockSize)
 {
     AllocateNewPage();
@@ -200,7 +270,7 @@ BlockAllocator::~BlockAllocator()
 
 void BlockAllocator::AllocateNewPage()
 {
-    PageHeader* newPage = (PageHeader*)malloc(mAllocatedPageSize);
+    PageHeader* newPage = (PageHeader*)mMemoryAllocator->GetBlockPage(mAllocatedPageSize);
     newPage->mNextPage = mPageHead;
     mPageHead = newPage;
     InitializePageBlocks(newPage);
@@ -241,6 +311,10 @@ void BlockAllocator::Free(void* p) {
         throw std::invalid_argument("BlockAllocator::Free received an unallocated address!");
     }
     ph->mFreeBlocks |= mask;
+
+    if(ph->mFreeBlocks == ~0) {
+        mMemoryAllocator->ReturnPage(reinterpret_cast<void*>(ph), mAllocatedPageSize);
+    }
 }
 
 int BlockAllocator::GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader) {

@@ -22,8 +22,8 @@ struct PoolAllocator11 {
   PoolAllocator11& operator=(PoolAllocator11<U> const&) noexcept {return *this;}
 
   struct PoolItem {
-    pointer next;
-  }
+    PoolItem* next;
+  };
 
   PoolItem* pool_head = nullptr;
 
@@ -32,7 +32,7 @@ struct PoolAllocator11 {
       throw std::bad_array_new_length(); // or something else
     if (!n) return nullptr; // zero means null, not throw
     if(pool_head != nullptr) {
-       if(auto*r = static_cast<pointer>(pool_head)) {
+       if(auto*r = reinterpret_cast<pointer>(pool_head)) {
          pool_head = pool_head->next;
          return r;
        }
@@ -44,8 +44,8 @@ struct PoolAllocator11 {
   }
 
   void deallocate(pointer p, std::size_t n) {
-    std::cout << "poolallocator retaining pool item!" std::endl;
-    PoolItem* pi = reinterpret_cast<pointer>(p);
+    std::cout << "poolallocator retaining pool item!" << std::endl;
+    PoolItem* pi = reinterpret_cast<PoolItem*>(p);
     pi->next = pool_head;
     pool_head = pi;
   }

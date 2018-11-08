@@ -7,6 +7,7 @@
 
 using namespace std;
 
+const unsigned long GIGABYTE = 1024 * 1024 * 1024;
 
 class Foo {
 public:
@@ -36,7 +37,7 @@ struct Y {
 
 int main(int argc, char *argv[])
 {
-    MemoryAllocator::Initialize();
+    MemoryAllocator::Initialize(GIGABYTE);
     //unsigned long val = 1;
     //std::cout << "sizeof(long): " << 8 * sizeof(val) << std::endl;
     //std::cout << "MSB for 5: " << __builtin_clzl(val) << std::endl;
