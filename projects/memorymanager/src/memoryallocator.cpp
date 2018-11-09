@@ -15,7 +15,9 @@ const unsigned long MEGABYTE = 1024 * 1024;
 const unsigned long GIGABYTE = 1024 * 1024 * 1024;
 const unsigned long LARGE_PRIME = 104729;
 
+const std::size_t BLOCK_PAGE_ALIGNMENT = 64;
 const unsigned long CACHE_LINE_ALIGNMENT_SHIFT_BUFFER = 63;
+
 
 struct BlockHeader
 {
@@ -115,7 +117,7 @@ void MemoryAllocator::InitializeWithMemoryBudget(std::size_t memory_budget) {
 
 void MemoryAllocator::InitializeMemoryPool(std::size_t memory_budget) {
     mTotalMemoryBudget = memory_budget;
-    mMemoryPool = malloc(mTotalMemoryBudget);
+    mMemoryPool = reinterpret_cast<u_char*>(malloc(mTotalMemoryBudget));
     mFreeMemoryList = (PageListHeader*)mMemoryPool;
     mFreeMemoryList->mNextPage = nullptr;
     mFreeMemoryList->mPageSize = mTotalMemoryBudget;
@@ -153,14 +155,24 @@ void MemoryAllocator::InitializeBlockAllocators() {
     mMaxBlockSize = maxBlockSize;
 }
 
+//O(N) search. todo: consider upgrading to a tree based structure if possible
 PageListHeader* MemoryAllocator::FindMemoryBlockPageForSize(size_t size, PageListHeader** outPrevPage) {
-    ///todo find the memory block we need
+    PageListHeader* prev = nullptr;
+    PageListHeader* ph = mFreeMemoryList;
+    while(ph != nullptr) {
+        if(ph->mPageSize >= size) {
+            if(outPrevPage != nullptr) {
+                *outPrevPage = prev;
+            }
+            return ph;
+        }
+        prev = ph;
+        ph = ph->mNextPage;
+    }
     return nullptr;
 }
 
-void* MemoryAllocator::GetBlockPage(std::size_t requestedSize) {
-
-    ///todo consider handling of getting the head page.  what does that do the mFreeList pointer?
+void* MemoryAllocator::AllocateBlockPage(std::size_t requestedSize) {
     std::size_t actualAllocSize = requestedSize + (requestedSize % 64);
     PageListHeader* prevPage = nullptr;
     PageListHeader* pageToAlloc = FindMemoryBlockPageForSize(requestedSize, &prevPage);
@@ -170,27 +182,63 @@ void* MemoryAllocator::GetBlockPage(std::size_t requestedSize) {
     }
     newFreeBlock->mNextPage = pageToAlloc->mNextPage;
     newFreeBlock->mPageSize = pageToAlloc->mPageSize - actualAllocSize;
+    
+    if (pageToAlloc == mFreeMemoryList)
+    {
+        mFreeMemoryList = newFreeBlock;
+    }
     return nullptr;
+}
+
+bool MemoryAllocator::AddressIsInMemoryPool(void *p) const
+{
+    return p > mMemoryPool && (p < (mMemoryPool + mTotalMemoryBudget));
+}
+
+bool MemoryAllocator::AddressIsBlockPageAligned(void* p) const 
+{
+    return (reinterpret_cast<std::size_t>(p) % BLOCK_PAGE_ALIGNMENT) == 0;
 }
 
 PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void* p) {
-    ///todo find the memory block we need
+    if(!AddressIsInMemoryPool(p)) {
+        return nullptr;
+    }
+
+    PageListHeader* prev = nullptr;
+    PageListHeader* ph = mFreeMemoryList;
+    while(ph != nullptr) {
+        if(ph > p) {
+            return prev;
+        }
+        prev = ph;
+        ph = ph->mNextPage;
+    }
     return nullptr;
 }
 
-void MemoryAllocator::ReturnPage(void *p, std::size_t requestedSize)
+void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
 {
-    std::size_t actualAllocSize = requestedSize + (requestedSize % 64);
-    PageListHeader* prev = FindPrevMemoryBlockPageLocationForAddress(p);
-    PageListHeader* newReturnedPage = new (p)PageListHeader;
-    newReturnedPage->mNextPage = ///figure out how to handle the edge cases where we are the new head or tail etc.
+    if(!AddressIsInMemoryPool(p)) {
+        throw std::invalid_argument("MemoryAllocator::FreeBlockPage received address out of pool range!");
+    }
+
+    if(!AddressIsBlockPageAligned(p)) {
+        throw std::invalid_argument("MemoryAllocator::FreeBlockPage received misaligned address!");
+    }
+
+    const std::size_t actualAllocSize = requestedSize + (requestedSize % 64);
     
-    ///todo insert the returned page where it belongs
-    if (prev != nullptr)
-    {
+    PageListHeader* newReturnedPage = new (p)PageListHeader;
+    if(newReturnedPage < mFreeMemoryList) {
+        newReturnedPage->mNextPage = mFreeMemoryList;
+        mFreeMemoryList = newReturnedPage;
+    } else {
+        PageListHeader *prev = FindPrevMemoryBlockPageLocationForAddress(p);
+        newReturnedPage->mNextPage = prev->mNextPage; 
         prev->mNextPage = newReturnedPage;
     }
-    
+    newReturnedPage->mPageSize = actualAllocSize;
 }
 
 MemoryAllocator::MemoryAllocator()
@@ -270,7 +318,7 @@ BlockAllocator::~BlockAllocator()
 
 void BlockAllocator::AllocateNewPage()
 {
-    PageHeader* newPage = (PageHeader*)mMemoryAllocator->GetBlockPage(mAllocatedPageSize);
+    PageHeader* newPage = (PageHeader*)mMemoryAllocator->AllocateBlockPage(mAllocatedPageSize);
     newPage->mNextPage = mPageHead;
     mPageHead = newPage;
     InitializePageBlocks(newPage);
@@ -313,7 +361,7 @@ void BlockAllocator::Free(void* p) {
     ph->mFreeBlocks |= mask;
 
     if(ph->mFreeBlocks == ~0) {
-        mMemoryAllocator->ReturnPage(reinterpret_cast<void*>(ph), mAllocatedPageSize);
+        mMemoryAllocator->FreeBlockPage(reinterpret_cast<void*>(ph), mAllocatedPageSize);
     }
 }
 

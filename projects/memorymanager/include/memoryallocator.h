@@ -24,8 +24,8 @@ public:
     ~MemoryAllocator();
 
     static void Initialize(std::size_t memory_budget);
-    void* GetBlockPage(std::size_t size);
-    void ReturnPage(void* p, std::size_t size);
+    void* AllocateBlockPage(std::size_t size);
+    void FreeBlockPage(void* p, std::size_t size);
 
 private:
     void InitializeWithMemoryBudget(std::size_t memory_budget);
@@ -33,6 +33,8 @@ private:
     void InitializeMemoryPool(std::size_t memory_budget);
     PageListHeader* FindMemoryBlockPageForSize(size_t size, PageListHeader **outPrevPage);
     PageListHeader* FindPrevMemoryBlockPageLocationForAddress(void* p);
+    bool AddressIsInMemoryPool(void* p) const;
+    bool AddressIsBlockPageAligned(void* p) const;
     friend void *operator new(size_t t);
     friend void operator delete(void* p) noexcept;
     void PrintAddressAllocCallStack(void* p);
@@ -44,8 +46,7 @@ private:
     std::size_t mMaxBlockSize;
     
     std::size_t mTotalMemoryBudget;
-    void* mMemoryPool;
-    
+    u_char* mMemoryPool;
     PageListHeader* mFreeMemoryList;
     
     typedef std::map<std::size_t,
