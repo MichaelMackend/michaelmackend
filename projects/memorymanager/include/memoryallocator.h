@@ -7,6 +7,7 @@
 #include "mallocator11.h"
 #include "poolallocator11.h"
 
+using byte = u_char;
 
 class BlockAllocator;
 class BackTrace;
@@ -46,7 +47,8 @@ private:
     std::size_t mMaxBlockSize;
     
     std::size_t mTotalMemoryBudget;
-    u_char* mMemoryPool;
+    byte* mAllocatedPool;
+    byte* mMemoryPool;
     PageListHeader* mFreeMemoryList;
     
     typedef std::map<std::size_t,

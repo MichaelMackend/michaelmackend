@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
     delete x;
     delete y;
-    delete y;
+    //delete y;
 
     Foo* foo = new Foo(3,5);
     foo->print();
