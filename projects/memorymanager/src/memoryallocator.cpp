@@ -179,8 +179,9 @@ PageListHeader* MemoryAllocator::FindMemoryBlockPageForSize(size_t size, PageLis
 }
 
 void* MemoryAllocator::AllocateBlockPage(std::size_t requestedSize) {
-    std::size_t actualAllocSize = requestedSize + (requestedSize % 64);
-    PageListHeader* prevPage = nullptr;
+    std::size_t blockAlignmentPadding = BLOCK_PAGE_ALIGNMENT - (requestedSize % 64);
+    std::size_t actualAllocSize = requestedSize + blockAlignmentPadding;
+    PageListHeader *prevPage = nullptr;
     PageListHeader* pageToAlloc = FindMemoryBlockPageForSize(requestedSize, &prevPage);
     PageListHeader* newFreeBlock = new (reinterpret_cast<byte*>(pageToAlloc) + actualAllocSize) PageListHeader;
     if(prevPage != nullptr) {
@@ -223,6 +224,14 @@ PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void*
     return nullptr;
 }
 
+bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) {
+    ///todo return true if page starts where prevPage ends in contiguous memory
+}
+
+void MemoryAllocator::JoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) {
+    ///todo shift the pagesize for start page to encapsulate the entirety of pageToAppend
+}
+
 void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
 {
     if(!AddressIsInMemoryPool(p)) {
@@ -233,14 +242,18 @@ void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
         throw std::invalid_argument("MemoryAllocator::FreeBlockPage received misaligned address!");
     }
 
-    const std::size_t actualAllocSize = requestedSize + (requestedSize % 64);
-    
+    const std::size_t blockAlignmentPadding = BLOCK_PAGE_ALIGNMENT - (requestedSize % 64);
+    const std::size_t actualAllocSize = requestedSize + blockAlignmentPadding;
+
     PageListHeader* newReturnedPage = new (p)PageListHeader;
     if(newReturnedPage < mFreeMemoryList) {
         newReturnedPage->mNextPage = mFreeMemoryList;
         mFreeMemoryList = newReturnedPage;
     } else {
         PageListHeader *prev = FindPrevMemoryBlockPageLocationForAddress(p);
+        if(PageIsAdjacentToPreviousPage(newReturnedPage, prev)) {
+            JoinPages(prev, newReturnedPage);
+        }
         newReturnedPage->mNextPage = prev->mNextPage; 
         prev->mNextPage = newReturnedPage;
     }
