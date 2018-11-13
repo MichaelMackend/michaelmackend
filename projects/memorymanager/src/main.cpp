@@ -43,6 +43,29 @@ int main(int argc, char *argv[])
     //std::cout << "MSB for 5: " << __builtin_clzl(val) << std::endl;
     //return 0;
     sleep(1);
+
+    int* pInts[64][3] = {nullptr};
+
+    for(int j = 0; j < 3; ++j) {
+    for(int i = 0; i < 64; ++i) {
+        pInts[i][j] = new int;
+    }
+    }
+
+    for(int i = 0; i < 64; ++i) {
+        delete pInts[i][1];
+    }
+
+    for (int i = 0; i < 64; ++i)
+    {
+        delete pInts[i][2];
+    }
+
+    for (int i = 0; i < 64; ++i)
+    {
+        delete pInts[i][0];
+    }
+
     X* x = new X;
     Y* y = new Y;
 

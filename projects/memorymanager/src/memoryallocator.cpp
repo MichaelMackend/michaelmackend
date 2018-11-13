@@ -225,11 +225,20 @@ PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void*
 }
 
 bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) {
-    ///todo return true if page starts where prevPage ends in contiguous memory
+    if(page == nullptr || prevPage == nullptr) {
+        return false;
+    }
+    
+    return (reinterpret_cast<byte*>(prevPage) + prevPage->mPageSize) == reinterpret_cast<byte*>(page);
 }
 
-void MemoryAllocator::JoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) {
-    ///todo shift the pagesize for start page to encapsulate the entirety of pageToAppend
+bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) {
+    if(PageIsAdjacentToPreviousPage(pageToAppend, startPage)) {
+        startPage->mPageSize += pageToAppend->mPageSize;
+        startPage->mNextPage = pageToAppend->mNextPage;
+        return true;
+    }
+    return false;
 }
 
 void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
@@ -246,18 +255,21 @@ void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
     const std::size_t actualAllocSize = requestedSize + blockAlignmentPadding;
 
     PageListHeader* newReturnedPage = new (p)PageListHeader;
+    newReturnedPage->mPageSize = actualAllocSize;
+
+    PageListHeader* joinStart = nullptr;
     if(newReturnedPage < mFreeMemoryList) {
         newReturnedPage->mNextPage = mFreeMemoryList;
         mFreeMemoryList = newReturnedPage;
+        joinStart = newReturnedPage;
     } else {
         PageListHeader *prev = FindPrevMemoryBlockPageLocationForAddress(p);
-        if(PageIsAdjacentToPreviousPage(newReturnedPage, prev)) {
-            JoinPages(prev, newReturnedPage);
-        }
         newReturnedPage->mNextPage = prev->mNextPage; 
         prev->mNextPage = newReturnedPage;
+        joinStart = prev;
     }
-    newReturnedPage->mPageSize = actualAllocSize;
+
+    TryJoinPages(joinStart, joinStart->mNextPage);
 }
 
 MemoryAllocator::MemoryAllocator()
@@ -330,7 +342,7 @@ BlockAllocator::BlockAllocator( MemoryAllocator* memAllocator, size_t block_size
     , mAllocatedPageSize(mPageSize + sizeof(PageHeader) + CACHE_LINE_ALIGNMENT_SHIFT_BUFFER)
     , mBlocksPerPage(mPageSize / mBlockSize)
 {
-    AllocateNewPage();
+    //AllocateNewPage();
 }
 
 BlockAllocator::~BlockAllocator()
@@ -358,12 +370,12 @@ void BlockAllocator::InitializePageBlocks(PageHeader* page) {
 
 
 void* BlockAllocator::Alloc() {
-    if(mPageHead->mFreeBlocks == 0) {
+    if(mPageHead == nullptr || mPageHead->mFreeBlocks == 0) {
         AllocateNewPage();
     }
 
-    int bi = __builtin_ffs(mPageHead->mFreeBlocks) - 1;
-    uint64_t mask = 1 << bi;
+    int bi = __builtin_ffsl(mPageHead->mFreeBlocks) - 1;
+    uint64_t mask = 1LL << bi;
     mPageHead->mFreeBlocks &= ~mask;
 
     return (void*)(reinterpret_cast<byte*>(mPageHead->blockHead()) + (mBlockSize * bi));
@@ -395,9 +407,11 @@ int BlockAllocator::GetBlockIndexForAddress(void* addr, PageHeader*& outPageHead
         byte* pageBlocks = (byte*)ph->blockHead();
         ptrdiff_t pDistance = p - pageBlocks;
         if(pDistance < 0 || pDistance > mPageSize) {
+            ph = ph->mNextPage;
             continue;
         }
         if((pDistance % mBlockSize) != 0) {
+            ph = ph->mNextPage;
             continue;
         }
         bi = pDistance / mBlockSize;
