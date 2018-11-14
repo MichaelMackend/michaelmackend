@@ -62,7 +62,8 @@ public:
 private:
     void AllocateNewPage();
     void InitializePageBlocks(PageHeader* page);
-    int GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader);
+    void UnlinkPage(PageHeader* pageToUnlink, PageHeader* prevPage);
+    int GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader, PageHeader*& outPrevPageHeader);
 
     MemoryAllocator* mMemoryAllocator;
     PageHeader* mPageHead;
@@ -224,19 +225,19 @@ PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void*
     return nullptr;
 }
 
-bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) {
+bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) const {
     if(page == nullptr || prevPage == nullptr) {
         return false;
     }
-    
+
     return (reinterpret_cast<byte*>(prevPage) + prevPage->mPageSize) == reinterpret_cast<byte*>(page);
 }
 
-bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) {
+bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) const {
     if(PageIsAdjacentToPreviousPage(pageToAppend, startPage)) {
         startPage->mPageSize += pageToAppend->mPageSize;
         startPage->mNextPage = pageToAppend->mNextPage;
-        return true;
+        return TryJoinPages(startPage, startPage->mNextPage);
     }
     return false;
 }
@@ -368,6 +369,22 @@ void BlockAllocator::InitializePageBlocks(PageHeader* page) {
     page->mFreeBlocks = (uint64_t)-1;
 }
 
+void BlockAllocator::UnlinkPage(PageHeader *pageToUnlink, PageHeader *prevPage) 
+{
+    if(pageToUnlink == nullptr) {
+        return;
+    }
+
+    if(mPageHead == pageToUnlink) {
+        mPageHead = pageToUnlink->mNextPage;
+    } else {
+        if(prevPage == nullptr) {
+            throw;
+        } else {
+            prevPage->mNextPage = pageToUnlink->mNextPage;
+        }
+    }
+}
 
 void* BlockAllocator::Alloc() {
     if(mPageHead == nullptr || mPageHead->mFreeBlocks == 0) {
@@ -383,38 +400,44 @@ void* BlockAllocator::Alloc() {
 
 void BlockAllocator::Free(void* p) {
     BlockHeader* b = reinterpret_cast<BlockHeader*>(p);
+    PageHeader* prev = nullptr;
     PageHeader* ph = nullptr;
-    int bi = GetBlockIndexForAddress(p, ph);
+    int bi = GetBlockIndexForAddress(p, ph, prev);
     if(bi == -1) {
         throw std::invalid_argument("BlockAllocator::Free received invalid address!");
     }
-    uint64_t mask = 1 << bi;
+    uint64_t mask = 1LL << bi;
     if((ph->mFreeBlocks & mask) != 0) {
         throw std::invalid_argument("BlockAllocator::Free received an unallocated address!");
     }
     ph->mFreeBlocks |= mask;
 
     if(ph->mFreeBlocks == ~0) {
+        UnlinkPage(ph, prev);
         mMemoryAllocator->FreeBlockPage(reinterpret_cast<void*>(ph), mAllocatedPageSize);
     }
 }
 
-int BlockAllocator::GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader) {
+int BlockAllocator::GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader, PageHeader*& outPrevPageHeader) {
     byte* p = (byte*)addr;
     int bi = -1;
+    PageHeader* prev = nullptr;
     PageHeader* ph = mPageHead;
     while(ph != nullptr) {
         byte* pageBlocks = (byte*)ph->blockHead();
         ptrdiff_t pDistance = p - pageBlocks;
         if(pDistance < 0 || pDistance > mPageSize) {
+            prev = ph;
             ph = ph->mNextPage;
             continue;
         }
         if((pDistance % mBlockSize) != 0) {
+            prev = ph;
             ph = ph->mNextPage;
             continue;
         }
         bi = pDistance / mBlockSize;
+        outPrevPageHeader = prev;
         outPageHeader = ph;
         break;
     }

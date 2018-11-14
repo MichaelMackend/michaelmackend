@@ -44,26 +44,26 @@ int main(int argc, char *argv[])
     //return 0;
     sleep(1);
 
-    int* pInts[64][3] = {nullptr};
+    int* pInts[3][64] = {nullptr};
 
-    for(int j = 0; j < 3; ++j) {
-    for(int i = 0; i < 64; ++i) {
+    for(int i = 0; i < 3; ++i) {
+    for(int j = 0; j < 64; ++j) {
         pInts[i][j] = new int;
     }
     }
 
     for(int i = 0; i < 64; ++i) {
-        delete pInts[i][1];
+        delete pInts[1][i];
     }
 
     for (int i = 0; i < 64; ++i)
     {
-        delete pInts[i][2];
+        delete pInts[2][i];
     }
 
     for (int i = 0; i < 64; ++i)
     {
-        delete pInts[i][0];
+        delete pInts[0][i];
     }
 
     X* x = new X;

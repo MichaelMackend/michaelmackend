@@ -34,8 +34,8 @@ private:
     void InitializeMemoryPool(std::size_t memory_budget);
     PageListHeader* FindMemoryBlockPageForSize(size_t size, PageListHeader **outPrevPage);
     PageListHeader* FindPrevMemoryBlockPageLocationForAddress(void* p);
-    bool PageIsAdjacentToPreviousPage(PageListHeader* page, PageListHeader* prevPage);
-    bool TryJoinPages(PageListHeader* startPage, PageListHeader* pageToAppend);
+    bool PageIsAdjacentToPreviousPage(PageListHeader* page, PageListHeader* prevPage) const;
+    bool TryJoinPages(PageListHeader* startPage, PageListHeader* pageToAppend) const;
     bool AddressIsInMemoryPool(void* p) const;
     bool AddressIsBlockPageAligned(void* p) const;
     friend void *operator new(size_t t);
