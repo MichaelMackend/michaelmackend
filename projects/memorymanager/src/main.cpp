@@ -39,12 +39,10 @@ struct Y {
 
 int main(int argc, char *argv[])
 {
-    MemoryAllocator::Initialize(3 * KILOBYTE);
-    //unsigned long val = 1;
-    //std::cout << "sizeof(long): " << 8 * sizeof(val) << std::endl;
-    //std::cout << "MSB for 5: " << __builtin_clzl(val) << std::endl;
-    //return 0;
-    sleep(1);
+    try {
+    MemoryAllocator::Initialize(GIGABYTE);
+
+    MemoryAllocator::PrintAllocationSummaryReport();
 
     int* pInts[3][64] = {nullptr};
 
@@ -99,10 +97,10 @@ int main(int argc, char *argv[])
 
     MemoryAllocator::PrintAllocationSummaryReport();
 
-    std::cout << "Foo lists: " << std::endl;
-    std::list<Foo> fooList;
-    fooList.push_back(Foo(3,4));
-    fooList.push_back(Foo(5,6));
+    //std::cout << "Foo lists: " << std::endl;
+    //std::list<Foo> fooList;
+    //fooList.push_back(Foo(3,4));
+    //fooList.push_back(Foo(5,6));
 
     delete foo;
     delete two;
@@ -111,6 +109,15 @@ int main(int argc, char *argv[])
     
     delete bar;
     delete one;
+
+    delete one;
+
+    MemoryAllocator::PrintAllocationSummaryReport();
+    }
+    catch(const char* msg) {
+        std::cout << "Aborting program due to uncaught exception: " << msg << std::endl;
+        return -1; 
+    }
 
     MemoryAllocator::PrintAllocationSummaryReport();
     return 0;

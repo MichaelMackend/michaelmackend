@@ -174,6 +174,7 @@ PageListHeader* MemoryAllocator::FindMemoryBlockPageForSize(size_t size, PageLis
         prev = ph;
         ph = ph->mNextPage;
     }
+    throw "insufficient memory for request";
     return nullptr;
 }
 
@@ -243,11 +244,11 @@ bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pa
 void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
 {
     if(!AddressIsInMemoryPool(p)) {
-        throw;// std::invalid_argument("MemoryAllocator::FreeBlockPage received address out of pool range!");
+        throw "MemoryAllocator::FreeBlockPage received address out of pool range!";
     }
 
     if(!AddressIsBlockPageAligned(p)) {
-        throw;// std::invalid_argument("MemoryAllocator::FreeBlockPage received misaligned address!");
+        throw "MemoryAllocator::FreeBlockPage received misaligned address!";
     }
 
     const std::size_t blockAlignmentPadding = BLOCK_PAGE_ALIGNMENT - (requestedSize % 64);
@@ -278,7 +279,7 @@ void MemoryAllocator::PrintAllocationSummaryReport() {
         freeMemoryTotal += ph->mPageSize;
         ph = ph->mNextPage;
     }
-    std::cout << "Free Pages (" << 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget << "%): " << freeMemoryTotal << "/" << __a.mTotalMemoryBudget << "\n";
+    std::cout << "free page memory (" << 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget << "%): " << freeMemoryTotal << "/" << __a.mTotalMemoryBudget << "\n";
 }
 
 MemoryAllocator::MemoryAllocator() 
@@ -331,10 +332,10 @@ void MemoryAllocator::Free(void* p) {
             mapIter->second->Free(p);
             allocRecordMap.erase(mapIter);
         }
-    } catch(...) {
+    } catch(const char* msg) {
         std::cout << "MemoryAllocator::Free error for address: " << p << std::endl;
         PrintAddressAllocCallStack(p);
-        throw;
+        throw msg;
     }
 }
 
@@ -392,7 +393,7 @@ void BlockAllocator::UnlinkPage(PageHeader *pageToUnlink, PageHeader *prevPage)
         mPageHead = pageToUnlink->mNextPage;
     } else {
         if(prevPage == nullptr) {
-            throw;
+            throw "BlockAllocator::UnlinkPage failed due to a null prevPage when pageToUnlink was not mPageHead!";
         } else {
             prevPage->mNextPage = pageToUnlink->mNextPage;
         }
@@ -417,11 +418,11 @@ void BlockAllocator::Free(void* p) {
     PageHeader* ph = nullptr;
     int bi = GetBlockIndexForAddress(p, ph, prev);
     if(bi == -1) {
-        throw;// std::invalid_argument("BlockAllocator::Free received invalid address!");
+        throw "BlockAllocator::Free received invalid address!";
     }
     uint64_t mask = 1LL << bi;
     if((ph->mFreeBlocks & mask) != 0) {
-        throw;// std::invalid_argument("BlockAllocator::Free received an unallocated address!");
+        throw "BlockAllocator::Free received an unallocated address!";
     }
     ph->mFreeBlocks |= mask;
 
