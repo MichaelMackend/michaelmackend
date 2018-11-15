@@ -27,8 +27,9 @@ public:
     static void Initialize(std::size_t memory_budget);
     void* AllocateBlockPage(std::size_t size);
     void FreeBlockPage(void* p, std::size_t size);
+    static void PrintAllocationSummaryReport();
 
-private:
+  private:
     void InitializeWithMemoryBudget(std::size_t memory_budget);
     void InitializeBlockAllocators();
     void InitializeMemoryPool(std::size_t memory_budget);

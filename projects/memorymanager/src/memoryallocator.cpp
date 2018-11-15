@@ -99,13 +99,11 @@ static MemoryAllocator __a;
 void * operator new(size_t size)
 {
     void * p = __a.Alloc(size);
-    std::cout << "new created memory at " << p << std::endl;
     return p;
 }
 
 void operator delete(void * p) noexcept
 {
-    std::cout << "Delete operator freed memory at " << p << std::endl;
     __a.Free(p);
 }
 
@@ -200,7 +198,7 @@ void* MemoryAllocator::AllocateBlockPage(std::size_t requestedSize) {
 
 bool MemoryAllocator::AddressIsInMemoryPool(void *p) const
 {
-    return p > mMemoryPool && (p < (mMemoryPool + mTotalMemoryBudget));
+    return p >= mMemoryPool && (p < (mMemoryPool + mTotalMemoryBudget));
 }
 
 bool MemoryAllocator::AddressIsBlockPageAligned(void* p) const 
@@ -245,11 +243,11 @@ bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pa
 void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
 {
     if(!AddressIsInMemoryPool(p)) {
-        throw std::invalid_argument("MemoryAllocator::FreeBlockPage received address out of pool range!");
+        throw;// std::invalid_argument("MemoryAllocator::FreeBlockPage received address out of pool range!");
     }
 
     if(!AddressIsBlockPageAligned(p)) {
-        throw std::invalid_argument("MemoryAllocator::FreeBlockPage received misaligned address!");
+        throw;// std::invalid_argument("MemoryAllocator::FreeBlockPage received misaligned address!");
     }
 
     const std::size_t blockAlignmentPadding = BLOCK_PAGE_ALIGNMENT - (requestedSize % 64);
@@ -273,7 +271,22 @@ void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
     TryJoinPages(joinStart, joinStart->mNextPage);
 }
 
-MemoryAllocator::MemoryAllocator()
+void MemoryAllocator::PrintAllocationSummaryReport() {
+    int freeMemoryTotal = 0;
+    PageListHeader* ph = __a.mFreeMemoryList;
+    while(ph) {
+        freeMemoryTotal += ph->mPageSize;
+        ph = ph->mNextPage;
+    }
+    std::cout << "Free Pages (" << 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget << "%): " << freeMemoryTotal << "/" << __a.mTotalMemoryBudget << "\n";
+}
+
+MemoryAllocator::MemoryAllocator() 
+: mBlockAllocators(nullptr)
+, mBlockSizeLookupTable(nullptr)
+, mAllocationRecords(nullptr)
+, mAllocatedPool(nullptr)
+, mTotalMemoryBudget(0)
 { }
 
 MemoryAllocator::~MemoryAllocator() {
@@ -318,10 +331,10 @@ void MemoryAllocator::Free(void* p) {
             mapIter->second->Free(p);
             allocRecordMap.erase(mapIter);
         }
-    } catch(const std::invalid_argument& e) {
+    } catch(...) {
         std::cout << "MemoryAllocator::Free error for address: " << p << std::endl;
         PrintAddressAllocCallStack(p);
-        throw e;
+        throw;
     }
 }
 
@@ -404,11 +417,11 @@ void BlockAllocator::Free(void* p) {
     PageHeader* ph = nullptr;
     int bi = GetBlockIndexForAddress(p, ph, prev);
     if(bi == -1) {
-        throw std::invalid_argument("BlockAllocator::Free received invalid address!");
+        throw;// std::invalid_argument("BlockAllocator::Free received invalid address!");
     }
     uint64_t mask = 1LL << bi;
     if((ph->mFreeBlocks & mask) != 0) {
-        throw std::invalid_argument("BlockAllocator::Free received an unallocated address!");
+        throw;// std::invalid_argument("BlockAllocator::Free received an unallocated address!");
     }
     ph->mFreeBlocks |= mask;
 

@@ -44,7 +44,6 @@ struct PoolAllocator11 {
   }
 
   void deallocate(pointer p, std::size_t n) {
-    std::cout << "poolallocator retaining pool item!" << std::endl;
     PoolItem* pi = reinterpret_cast<PoolItem*>(p);
     pi->next = pool_head;
     pool_head = pi;

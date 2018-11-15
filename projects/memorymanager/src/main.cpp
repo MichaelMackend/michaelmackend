@@ -7,7 +7,9 @@
 
 using namespace std;
 
-const unsigned long GIGABYTE = 1024 * 1024 * 1024;
+const unsigned long KILOBYTE = 1024;
+const unsigned long MEGABYTE = 1024 * KILOBYTE;
+const unsigned long GIGABYTE = 1024 * MEGABYTE;
 
 class Foo {
 public:
@@ -37,7 +39,7 @@ struct Y {
 
 int main(int argc, char *argv[])
 {
-    MemoryAllocator::Initialize(GIGABYTE);
+    MemoryAllocator::Initialize(3 * KILOBYTE);
     //unsigned long val = 1;
     //std::cout << "sizeof(long): " << 8 * sizeof(val) << std::endl;
     //std::cout << "MSB for 5: " << __builtin_clzl(val) << std::endl;
@@ -52,19 +54,27 @@ int main(int argc, char *argv[])
     }
     }
 
+    MemoryAllocator::PrintAllocationSummaryReport();
+
     for(int i = 0; i < 64; ++i) {
         delete pInts[1][i];
     }
+
+    MemoryAllocator::PrintAllocationSummaryReport();
 
     for (int i = 0; i < 64; ++i)
     {
         delete pInts[2][i];
     }
 
+    MemoryAllocator::PrintAllocationSummaryReport();
+
     for (int i = 0; i < 64; ++i)
     {
         delete pInts[0][i];
     }
+
+    MemoryAllocator::PrintAllocationSummaryReport();
 
     X* x = new X;
     Y* y = new Y;
@@ -76,6 +86,8 @@ int main(int argc, char *argv[])
     delete y;
     //delete y;
 
+    MemoryAllocator::PrintAllocationSummaryReport();
+
     Foo* foo = new Foo(3,5);
     foo->print();
     foo->mX = 6;
@@ -85,6 +97,8 @@ int main(int argc, char *argv[])
     ThingOne* one = bar->CallOne();
     ThingTwo* two = bar->CallTwo();
 
+    MemoryAllocator::PrintAllocationSummaryReport();
+
     std::cout << "Foo lists: " << std::endl;
     std::list<Foo> fooList;
     fooList.push_back(Foo(3,4));
@@ -92,7 +106,12 @@ int main(int argc, char *argv[])
 
     delete foo;
     delete two;
+
+    MemoryAllocator::PrintAllocationSummaryReport();
+    
     delete bar;
     delete one;
+
+    MemoryAllocator::PrintAllocationSummaryReport();
     return 0;
 }
