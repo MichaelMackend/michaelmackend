@@ -27,7 +27,8 @@ public:
     static void Initialize(std::size_t memory_budget);
     void* AllocateBlockPage(std::size_t size);
     void FreeBlockPage(void* p, std::size_t size);
-    static void PrintAllocationSummaryReport();
+    static void PrintAllocationSummaryReport(char* buf);
+    static void CheckIntegrity();
 
   private:
     void InitializeWithMemoryBudget(std::size_t memory_budget);
@@ -39,6 +40,11 @@ public:
     bool TryJoinPages(PageListHeader* startPage, PageListHeader* pageToAppend) const;
     bool AddressIsInMemoryPool(void* p) const;
     bool AddressIsBlockPageAligned(void* p) const;
+    bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize);
+    void InsertNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize, PageListHeader* prevPage);
+    void UnlinkEntirePageListHeaderBlock(PageListHeader* pageToAlloc, PageListHeader* prevPage);
+    std::size_t GetBlockPageAlignedSize(std::size_t size) const;
+
     friend void *operator new(size_t t);
     friend void operator delete(void* p) noexcept;
     void PrintAddressAllocCallStack(void* p);
@@ -50,6 +56,7 @@ public:
     std::size_t mMaxBlockSize;
     
     std::size_t mTotalMemoryBudget;
+    std::size_t mRemainingMemory;
     byte* mAllocatedPool;
     byte* mMemoryPool;
     PageListHeader* mFreeMemoryList;
