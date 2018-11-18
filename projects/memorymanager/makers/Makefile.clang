@@ -4,7 +4,7 @@ APP_DRIVER = src/main.cpp
 APP_OBJECT = build/main.o
 
 CC = clang++
-CFLAGS = -std=c++11 -O3
+CFLAGS = -std=c++11
 
 OUTPUT = bin/
 BUILDDIR = build/

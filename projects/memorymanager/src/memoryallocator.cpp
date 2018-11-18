@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include "memoryallocator.h"
+#include <stdio.h>
 
 #define OVERLOAD_GLOBAL_NEW_DELETE
 
@@ -22,8 +23,6 @@ const unsigned long LARGE_PRIME = 104729;
 
 const std::size_t MEMORY_POOL_ALIGNMENT = 64;
 const std::size_t BLOCK_PAGE_ALIGNMENT = 64;
-const unsigned long CACHE_LINE_ALIGNMENT_SHIFT_BUFFER = 63;
-
 
 struct BlockHeader
 {
@@ -31,8 +30,14 @@ struct BlockHeader
 };
 
 struct PageHeader {
+    PageHeader()
+    : mFreeBlocks(0)
+    , mPrevPage(nullptr)
+    , mNextPage(nullptr)
+    {}
     uint64_t mFreeBlocks;
     PageHeader* mNextPage;
+    PageHeader* mPrevPage;
     signed char mCacheLineAlignmentOffset;
     BlockHeader* blockHead() {
         return reinterpret_cast<BlockHeader*>(this + 1);
@@ -59,6 +64,55 @@ class PageListHeader
     std::size_t mPageSize;
 };
 
+class PageTable
+{
+public:
+    PageTable()
+    : mPageTable0(nullptr)
+    , mPageTable1(nullptr)
+    , mNumPageSlots(0)
+    , mMemoryAllocatorPoolStartAddress(nullptr)
+    , mAllocatedPageSize(0)
+    {}
+    
+    void InitializePageTable(size_t numPageSlots, size_t allocatedPageSize, byte* memoryAllocatorPoolStartAddress) {
+        mAllocatedPageSize = allocatedPageSize;
+        mMemoryAllocatorPoolStartAddress = memoryAllocatorPoolStartAddress;
+        const size_t pageTableSize = sizeof(PageHeader*) * numPageSlots;
+        mPageTable0 = (PageHeader**)malloc(pageTableSize);
+        mPageTable1 = (PageHeader**)malloc(pageTableSize);
+        for(int i = 0;i < numPageSlots; ++i) {
+            mPageTable0[i] = nullptr;
+            mPageTable1[i] = nullptr;
+        }
+    }
+    size_t ComputeBlockPageIndexForAddress(void* addr);
+    void RecordPageInPageTable(PageHeader* page);
+    void RemovePageFromPageTable(PageHeader* page);
+    PageHeader* GetPageForAddress(void* addr) {
+        size_t index = ComputeBlockPageIndexForAddress(addr);
+        PageHeader** pageTable = mPageTable0[index] && PageOwnsAddr(mPageTable0[index], addr)
+                                 ? mPageTable0
+                                 : mPageTable1[index] && PageOwnsAddr(mPageTable1[index], addr)
+                                 ? mPageTable1
+                                 : nullptr;
+        if(pageTable == nullptr) {
+            return nullptr;
+        }
+        return pageTable[index];
+    }
+    bool PageOwnsAddr(PageHeader* ph, void* addr) {
+        return addr >= ph->blockHead() && addr < ((byte*)ph + mAllocatedPageSize);
+    }
+    
+private:
+    PageHeader** mPageTable0;
+    PageHeader** mPageTable1;
+    size_t mNumPageSlots;
+    size_t mAllocatedPageSize;
+    byte* mMemoryAllocatorPoolStartAddress;
+};
+
 /*
 [[ph][[bh]b][[bh]b][[bh]b][[bh]b][[bh]b][[bh]b][[bh]b]]
 */
@@ -76,17 +130,21 @@ public:
     void Free(void* p);
 
 private:
+    void PushNewPageAsHead(PageHeader* page);
+    
     void AllocateNewPage();
     void InitializePageBlocks(PageHeader* page);
-    void UnlinkPage(PageHeader* pageToUnlink, PageHeader* prevPage);
-    int GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader, PageHeader*& outPrevPageHeader);
+    void UnlinkPage(PageHeader* pageToUnlink);
+    int GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader);
 
     MemoryAllocator* mMemoryAllocator;
     PageHeader* mPageHead;
-    size_t mBlockSize;
-    size_t mPageSize;
-    size_t mAllocatedPageSize;
-    size_t mBlocksPerPage;
+    byte*  mMemoryAllocatorPoolStartAddress;
+    PageTable    mPageTable;
+    const size_t mBlockSize;
+    const size_t mPageSize;
+    const size_t mAllocatedPageSize;
+    const size_t mBlocksPerPage;
 };
 
 struct BlockAllocationRecord {
@@ -141,9 +199,9 @@ void MemoryAllocator::InitializeWithMemoryBudget(std::size_t memory_budget) {
 void MemoryAllocator::InitializeMemoryPool(std::size_t memory_budget) {
     mTotalMemoryBudget = memory_budget;
     mRemainingMemory = mTotalMemoryBudget;
+
     mAllocatedPool = reinterpret_cast<byte*>(malloc(mTotalMemoryBudget + MEMORY_POOL_ALIGNMENT));
-    const size_t shift = MEMORY_POOL_ALIGNMENT - ((size_t)mTotalMemoryBudget % MEMORY_POOL_ALIGNMENT);
-    mMemoryPool = mAllocatedPool + shift;
+    mMemoryPool = GetBlockPageAlignedAddress(mAllocatedPool);
     mFreeMemoryList = (PageListHeader*)mMemoryPool;
     
     mFreeMemoryList->SetNextPage(nullptr);
@@ -157,7 +215,6 @@ void MemoryAllocator::InitializeBlockAllocators() {
     mBlockAllocators = reinterpret_cast<BlockAllocator *>(malloc(numBlockSizes * sizeof(BlockAllocator)));
     for (int i = 0; i < numBlockSizes; ++i)
     {
-        //mBlockAllocators[i] = BlockAllocator(kBlockSizes[i]);
         new (mBlockAllocators + i) BlockAllocator(this, kBlockSizes[i]);
     }
 
@@ -175,7 +232,7 @@ void MemoryAllocator::InitializeBlockAllocators() {
     mAllocationRecords = (BlockAllocationMap *)malloc(sizeof(BlockAllocationMap) * ALLOC_TABLE_HASH_SIZE);
     for (size_t i = 0; i < ALLOC_TABLE_HASH_SIZE; ++i)
     {
-        BlockAllocationMap *am = mAllocationRecords + i;
+        //BlockAllocationMap *am = mAllocationRecords + i;
         new (mAllocationRecords + i) BlockAllocationMap;
     }
 
@@ -186,8 +243,9 @@ void MemoryAllocator::InitializeBlockAllocators() {
 PageListHeader* MemoryAllocator::FindMemoryBlockPageForSize(size_t size, PageListHeader** outPrevPage) {
     PageListHeader* prev = nullptr;
     PageListHeader* ph = mFreeMemoryList;
+    const size_t sizeNeeded = size + sizeof(PageListHeader);
     while(ph != nullptr) {
-        if(ph->mPageSize >= size) {
+        if(ph->mPageSize >= sizeNeeded) {
             if(outPrevPage != nullptr) {
                 *outPrevPage = prev;
             }
@@ -205,30 +263,40 @@ void* MemoryAllocator::AllocateBlockPage(std::size_t requestedSize) {
     requestedSize = GetBlockPageAlignedSize(requestedSize);
 
     PageListHeader *prevPage = nullptr;
-    PageListHeader *pageToAlloc = FindMemoryBlockPageForSize(requestedSize, &prevPage);
-    assert(AddressIsInMemoryPool(pageToAlloc));
     
-    if(AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(pageToAlloc, requestedSize)) {
-        InsertNewPageListHeaderBlock(pageToAlloc, requestedSize, prevPage);
-    } 
-    else {
-        UnlinkEntirePageListHeaderBlock(pageToAlloc, prevPage);
-    }
+    PageListHeader *pageToAlloc = FindMemoryBlockPageForSize(requestedSize, &prevPage);
+    
+    InsertNewPageListHeaderBlock(pageToAlloc, requestedSize, prevPage);
 
     mRemainingMemory -= requestedSize;
 
     return pageToAlloc;
 }
 
-size_t MemoryAllocator::GetBlockPageAlignedSize(size_t size) const
+//[62] 
+
+size_t MemoryAllocator::GetBlockPageAlignedSize(size_t size)
 {
-    std::size_t blockAlignmentPadding = BLOCK_PAGE_ALIGNMENT - (size % 64);
+    std::size_t blockAlignmentPadding = (size % BLOCK_PAGE_ALIGNMENT);
     return size + blockAlignmentPadding;
 }
+
+byte* MemoryAllocator::GetBlockPageAlignedAddress(byte* addr) {
+    return addr + (reinterpret_cast<long long>(addr) % BLOCK_PAGE_ALIGNMENT);
+}
+
+//[          ] 10
+//[rrrrrrr   ] 7
+//[       ppp] 
 
 bool MemoryAllocator::AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize){
     return (pageToAlloc->mPageSize - requestedSize) >= sizeof(PageListHeader);
 }
+
+//[          ] 10
+// 0123456789
+//[       ppp]
+
 void MemoryAllocator::InsertNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize, PageListHeader *prevPage){
     PageListHeader *newFreeBlock = new (reinterpret_cast<byte *>(pageToAlloc) + requestedSize) PageListHeader;
     assert(AddressIsInMemoryPool(newFreeBlock));
@@ -310,8 +378,8 @@ void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
         throw "MemoryAllocator::FreeBlockPage received misaligned address!";
     }
 
-    const std::size_t blockAlignmentPadding = BLOCK_PAGE_ALIGNMENT - (requestedSize % 64);
-    requestedSize = requestedSize + blockAlignmentPadding;
+    ///todo validate that the free address being freed is not already part of a free blockGetBlockPageAlignedSize
+    requestedSize = GetBlockPageAlignedSize(requestedSize);
 
     PageListHeader* newReturnedPage = new (p)PageListHeader;
     newReturnedPage->mPageSize = requestedSize;
@@ -335,14 +403,14 @@ void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize)
 }
 
 void MemoryAllocator::PrintAllocationSummaryReport(char* buf) {
-    /*int freeMemoryTotal = 0;
+    int freeMemoryTotal = 0;
     PageListHeader* ph = __a.mFreeMemoryList;
     while(ph) {
         freeMemoryTotal += ph->mPageSize;
         ph = ph->NextPage();
-    }*/
+    }
     //std::cout << "free page memory (" << 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget << "%): " << freeMemoryTotal << "/" << __a.mTotalMemoryBudget << "\n";
-    sprintf(buf, "free page memory %d bytes, free: %d/%d (%fpct)\n", __a.mTotalMemoryBudget - __a.mRemainingMemory, __a.mRemainingMemory, __a.mTotalMemoryBudget, 100.0 * (double)__a.mRemainingMemory / (double)__a.mTotalMemoryBudget);
+    sprintf(buf, "free page memory %d bytes, free: %d/%d (%fpct)\n", __a.mTotalMemoryBudget - freeMemoryTotal/*__a.mRemainingMemory*/, freeMemoryTotal/*__a.mRemainingMemory*/, __a.mTotalMemoryBudget, 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget);
 }
 
 void MemoryAllocator::CheckIntegrity() {
@@ -387,8 +455,10 @@ void* MemoryAllocator::Alloc(size_t size) {
 
     const size_t blockPtrAsValue = reinterpret_cast<std::size_t>(block);
 
+#if RECORD_CALLSTACKS
     mAllocatedPtrBackTraceMap[blockPtrAsValue] = BackTrace::CreateBackTrace();
-
+#endif
+    
     const size_t hashedBlockPtrValue = blockPtrAsValue % ALLOC_TABLE_HASH_SIZE;
     BlockAllocationMap& thisMap = mAllocationRecords[hashedBlockPtrValue];
     thisMap[blockPtrAsValue]=ba;
@@ -398,6 +468,11 @@ void* MemoryAllocator::Alloc(size_t size) {
 
 void MemoryAllocator::Free(void* p) {
     try {
+        if(mAllocationRecords == nullptr) {
+            std::cout << "free: " << p << std::endl << std::flush;
+            return free(p);
+        }
+        
         const size_t blockPtrAsValue = reinterpret_cast<std::size_t>(p);
         const size_t hashedBlockPtrValue = blockPtrAsValue % ALLOC_TABLE_HASH_SIZE;
 
@@ -407,7 +482,7 @@ void MemoryAllocator::Free(void* p) {
             mapIter->second->Free(p);
             allocRecordMap.erase(mapIter);
         } else {
-            std::cout << "free: " << p << std::endl << std::flush;
+            
             return free(p);
         }
     } catch(const char* msg) {
@@ -418,6 +493,7 @@ void MemoryAllocator::Free(void* p) {
 }
 
 void MemoryAllocator::PrintAddressAllocCallStack(void* p) {
+#if RECORD_CALLSTACKS
     std::cout << "ADDRESS " << p << " ALLOCATED AT: \n";
     auto mapIter = mAllocatedPtrBackTraceMap.find(reinterpret_cast<std::size_t>(p));
     if(mapIter != mAllocatedPtrBackTraceMap.end()) {
@@ -425,17 +501,22 @@ void MemoryAllocator::PrintAddressAllocCallStack(void* p) {
     } else {
         std::cout << "NOT FOUND." << std::endl;
     }
+#endif
 }
+
+//[[ph][64*blocksize]]
 
 BlockAllocator::BlockAllocator( MemoryAllocator* memAllocator, size_t block_size, size_t page_maxSize)
     : mMemoryAllocator(memAllocator)
     , mPageHead(nullptr)
     , mBlockSize(block_size)
     , mPageSize(std::min(64 * block_size, page_maxSize))
-    , mAllocatedPageSize(mPageSize + sizeof(PageHeader) + CACHE_LINE_ALIGNMENT_SHIFT_BUFFER)
+    , mAllocatedPageSize(MemoryAllocator::GetBlockPageAlignedSize(mPageSize + sizeof(PageHeader)))
     , mBlocksPerPage(mPageSize / mBlockSize)
 {
-    //AllocateNewPage();
+    mMemoryAllocatorPoolStartAddress = mMemoryAllocator->mMemoryPool;
+    const size_t pageTableLength = mMemoryAllocator->mTotalMemoryBudget / mAllocatedPageSize;
+    mPageTable.InitializePageTable(pageTableLength, mAllocatedPageSize, mMemoryAllocatorPoolStartAddress);
 }
 
 BlockAllocator::~BlockAllocator()
@@ -443,16 +524,56 @@ BlockAllocator::~BlockAllocator()
     //cleanup
 }
 
+void BlockAllocator::PushNewPageAsHead(PageHeader* newPage) {
+    newPage->mNextPage = mPageHead;
+    if(mPageHead != nullptr) {
+        mPageHead->mPrevPage = newPage;
+    }
+    mPageHead = newPage;
+}
+
+void PageTable::RecordPageInPageTable(PageHeader* newPage) {
+    ptrdiff_t delta = reinterpret_cast<byte*>(newPage) - mMemoryAllocatorPoolStartAddress;
+    size_t startPageIndex = ComputeBlockPageIndexForAddress(newPage);
+    size_t endPageIndex = ComputeBlockPageIndexForAddress(reinterpret_cast<byte*>(newPage) + (mAllocatedPageSize));
+    
+    PageHeader** pageTable = !mPageTable0[startPageIndex] ? mPageTable0 : !mPageTable1[startPageIndex] ? mPageTable1 : nullptr;
+    assert(pageTable);
+    pageTable[startPageIndex] = newPage;
+    pageTable = !mPageTable0[endPageIndex] ? mPageTable0 : !mPageTable1[endPageIndex] ? mPageTable1 : nullptr;
+    assert(pageTable);
+    pageTable[endPageIndex] = newPage;
+}
+
+//576 + 3136 + 1600 + 1088 + 1088
+// 0,0   0,1    2,3    4,5     5,6
+//0     576    3712    5312    6400
+//
+
+void PageTable::RemovePageFromPageTable(PageHeader* page) {
+    size_t startPageIndex = ComputeBlockPageIndexForAddress(page);
+    size_t endPageIndex = ComputeBlockPageIndexForAddress(reinterpret_cast<byte*>(page) + (mAllocatedPageSize));
+    PageHeader** pageTable = mPageTable0[startPageIndex] == page ? mPageTable0 : mPageTable1[startPageIndex] == page ? mPageTable1 : nullptr;
+    assert(pageTable);
+    pageTable[startPageIndex] = nullptr;
+    pageTable = mPageTable0[endPageIndex] == page ? mPageTable0 : mPageTable1[endPageIndex] == page ? mPageTable1 : nullptr;
+    assert(pageTable);
+    pageTable[endPageIndex] = nullptr;
+}
+
 void BlockAllocator::AllocateNewPage()
 {
     PageHeader* newPage = (PageHeader*)mMemoryAllocator->AllocateBlockPage(mAllocatedPageSize);
-    newPage->mNextPage = mPageHead;
-    mPageHead = newPage;
+    
+    mPageTable.RecordPageInPageTable(newPage);
+    
+    PushNewPageAsHead(newPage);
+    
     InitializePageBlocks(newPage);
 }
 
 void BlockAllocator::InitializePageBlocks(PageHeader* page) {
-    BlockHeader* block = page->blockHead();
+    //BlockHeader* block = page->blockHead();
     /*for(int i = 0; i < mBlocksPerPage; ++i) {
         block->mNextBlock = new (reinterpret_cast<byte*>(block) + mBlockSize)BlockHeader;
         block = block->mNextBlock;
@@ -461,7 +582,7 @@ void BlockAllocator::InitializePageBlocks(PageHeader* page) {
     page->mFreeBlocks = (uint64_t)-1;
 }
 
-void BlockAllocator::UnlinkPage(PageHeader *pageToUnlink, PageHeader *prevPage) 
+void BlockAllocator::UnlinkPage(PageHeader *pageToUnlink)
 {
     if(pageToUnlink == nullptr) {
         return;
@@ -469,13 +590,17 @@ void BlockAllocator::UnlinkPage(PageHeader *pageToUnlink, PageHeader *prevPage)
 
     if(mPageHead == pageToUnlink) {
         mPageHead = pageToUnlink->mNextPage;
+        mPageHead->mPrevPage = nullptr;
     } else {
-        if(prevPage == nullptr) {
+        if(pageToUnlink->mPrevPage == nullptr) {
             throw "BlockAllocator::UnlinkPage failed due to a null prevPage when pageToUnlink was not mPageHead!";
         } else {
-            assert(prevPage != pageToUnlink);
-            assert(pageToUnlink->mNextPage != prevPage);
-            prevPage->mNextPage = pageToUnlink->mNextPage;
+            assert(pageToUnlink->mPrevPage != pageToUnlink);
+            assert(pageToUnlink->mNextPage != pageToUnlink->mPrevPage);
+            pageToUnlink->mPrevPage->mNextPage = pageToUnlink->mNextPage;
+            if(pageToUnlink->mNextPage != nullptr) {
+                pageToUnlink->mNextPage->mPrevPage = pageToUnlink->mPrevPage;
+            }
         }
     }
 }
@@ -484,7 +609,7 @@ void* BlockAllocator::Alloc() {
     if(mPageHead == nullptr || mPageHead->mFreeBlocks == 0) {
         AllocateNewPage();
     }
-
+    
     int bi = __builtin_ffsl(mPageHead->mFreeBlocks) - 1;
     uint64_t mask = 1LL << bi;
     mPageHead->mFreeBlocks &= ~mask;
@@ -494,9 +619,8 @@ void* BlockAllocator::Alloc() {
 
 void BlockAllocator::Free(void* p) {
     BlockHeader* b = reinterpret_cast<BlockHeader*>(p);
-    PageHeader* prev = nullptr;
     PageHeader* ph = nullptr;
-    int bi = GetBlockIndexForAddress(p, ph, prev);
+    int bi = GetBlockIndexForAddress(p, ph);
     if(bi == -1) {
         throw "BlockAllocator::Free received invalid address!";
     }
@@ -507,35 +631,48 @@ void BlockAllocator::Free(void* p) {
     ph->mFreeBlocks |= mask;
 
     if(ph->mFreeBlocks == ~0) {
-        UnlinkPage(ph, prev);
+        UnlinkPage(ph);
+        mPageTable.RemovePageFromPageTable(ph);
         mMemoryAllocator->FreeBlockPage(reinterpret_cast<void*>(ph), mAllocatedPageSize);
     }
 }
 
-int BlockAllocator::GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader, PageHeader*& outPrevPageHeader) {
+int BlockAllocator::GetBlockIndexForAddress(void* addr, PageHeader*& outPageHeader) {
     byte* p = (byte*)addr;
     int bi = -1;
-    PageHeader* prev = nullptr;
-    PageHeader* ph = mPageHead;
-    while(ph != nullptr) {
+    //const size_t pageIndex = ComputeBlockPageIndexForAddress(addr);
+    PageHeader* ph = mPageTable.GetPageForAddress(addr);
+    if(ph != nullptr) {
         byte* pageBlocks = (byte*)ph->blockHead();
         ptrdiff_t pDistance = p - pageBlocks;
-        if(pDistance < 0 || pDistance > mPageSize) {
-            prev = ph;
-            ph = ph->mNextPage;
-            continue;
-        }
-        if((pDistance % mBlockSize) != 0) {
-            prev = ph;
-            ph = ph->mNextPage;
-            continue;
-        }
         bi = pDistance / mBlockSize;
-        outPrevPageHeader = prev;
         outPageHeader = ph;
-        break;
     }
     return bi;
 }
 
+size_t PageTable::ComputeBlockPageIndexForAddress(void* addr) {
+    ptrdiff_t delta = reinterpret_cast<byte*>(addr) - mMemoryAllocatorPoolStartAddress;
+    size_t index = delta / mAllocatedPageSize;
+    return index;
+}
 
+
+// [        |        |        |        |        |        |        ]
+//     0        1       2         3        4         5       6
+// [       000000000   222222222      333333333 555555555
+//                1
+//
+// 0000000001010101011
+//          121212121212121212
+//                   232323232323232323
+//                            3434343434343434343
+//                                     454545454545454545
+//                                              5656565656565656565
+//                                                                6
+// 0:ph0
+// 1:ph0
+// 2:ph2
+// 3:ph2,ph3
+// 4:ph3
+// 5:ph5

@@ -44,13 +44,6 @@ struct Y {
     char c;
 };
 
-bool controlThread(bool* quit) {
-    //_getch();
-}
-
-
-
-
 void simpleTests();
 void threadTests();
 void allocatorThread(const bool* quit);
@@ -58,7 +51,9 @@ void arrayTests();
 
 int main(int argc, char *argv[])
 {
+    
     threadTests();
+    //arrayTests();
 }
 
 void arrayTests() {
@@ -80,7 +75,7 @@ void arrayTests() {
 }
 
 void threadTests() {
-    MemoryAllocator::Initialize(MEGABYTE);
+    MemoryAllocator::Initialize(10 * MEGABYTE);
     bool quit = false;
     cout << "running...";
     std::thread t(allocatorThread, &quit);
@@ -142,8 +137,9 @@ void allocatorThread(const bool *quit)
             allocs[i] = new int[size];
         }
         
-        if((iter % 10000) == 0) {
+        if((iter % 50000) == 0) {
             printTimeSummary<unit>(start, (double)iter);
+            //printMemSummary(logBuf, allocated);
         }
     }
 }

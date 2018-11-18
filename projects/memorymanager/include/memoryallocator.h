@@ -20,6 +20,8 @@ AllocStack backtrace();
 
 class MemoryAllocator
 {
+    friend class BlockAllocator;
+    
 public:
     MemoryAllocator();
     ~MemoryAllocator();
@@ -43,7 +45,8 @@ public:
     bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize);
     void InsertNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize, PageListHeader* prevPage);
     void UnlinkEntirePageListHeaderBlock(PageListHeader* pageToAlloc, PageListHeader* prevPage);
-    std::size_t GetBlockPageAlignedSize(std::size_t size) const;
+    static std::size_t GetBlockPageAlignedSize(std::size_t size);
+    static byte* GetBlockPageAlignedAddress(byte* addr);
 
     friend void *operator new(size_t t);
     friend void operator delete(void* p) noexcept;
@@ -67,7 +70,9 @@ public:
                          Mallocator11<std::pair<const std::size_t, BackTrace>>>
             BackTraceMap;
 
+#if RECORD_CALLSTACKS
     BackTraceMap mAllocatedPtrBackTraceMap;
+#endif
 
     static const unsigned int ALLOC_TABLE_HASH_SIZE = 104729;
 
