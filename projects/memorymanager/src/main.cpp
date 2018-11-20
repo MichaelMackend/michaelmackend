@@ -51,7 +51,7 @@ void arrayTests();
 
 int main(int argc, char *argv[])
 {
-    
+    //simpleTests();
     threadTests();
     //arrayTests();
 }
@@ -75,7 +75,7 @@ void arrayTests() {
 }
 
 void threadTests() {
-    MemoryAllocator::Initialize(10 * MEGABYTE);
+    MemoryAllocator::Initialize(GIGABYTE);
     bool quit = false;
     cout << "running...";
     std::thread t(allocatorThread, &quit);
@@ -86,7 +86,7 @@ void threadTests() {
     return;
 }
 
-#define ALLOC_SLOTS 20000
+#define ALLOC_SLOTS 10
 #define MIN_ALLOC 4
 #define MAX_ALLOC 4
 
@@ -137,9 +137,9 @@ void allocatorThread(const bool *quit)
             allocs[i] = new int[size];
         }
         
-        if((iter % 50000) == 0) {
-            printTimeSummary<unit>(start, (double)iter);
-            //printMemSummary(logBuf, allocated);
+        if((iter % 1) == 0) {
+            //printTimeSummary<unit>(start, (double)iter);
+            printMemSummary(logBuf, allocated);
         }
     }
 }
@@ -152,6 +152,7 @@ void simpleTests() {
         //MemoryAllocator::PrintAllocationSummaryReport();
 
         int *pInts[3][64] = {nullptr};
+        char logBuf[512] = {'\0'};
 
         for (int i = 0; i < 3; ++i)
         {
@@ -161,29 +162,33 @@ void simpleTests() {
             }
         }
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
 
         for (int i = 0; i < 64; ++i)
         {
             delete pInts[1][i];
         }
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
 
         for (int i = 0; i < 64; ++i)
         {
             delete pInts[2][i];
         }
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
-
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
+        
         for (int i = 0; i < 64; ++i)
         {
             delete pInts[0][i];
         }
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
-
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
+        
         X *x = new X;
         Y *y = new Y;
 
@@ -194,8 +199,9 @@ void simpleTests() {
         delete y;
         //delete y;
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
-
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
+        
         Foo *foo = new Foo(3, 5);
         foo->print();
         foo->mX = 6;
@@ -205,8 +211,9 @@ void simpleTests() {
         ThingOne *one = bar->CallOne();
         ThingTwo *two = bar->CallTwo();
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
-
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
+        
         //std::cout << "Foo lists: " << std::endl;
         //std::list<Foo> fooList;
         //fooList.push_back(Foo(3,4));
@@ -215,14 +222,16 @@ void simpleTests() {
         delete foo;
         delete two;
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
-
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
+        
         delete bar;
         delete one;
 
-        delete one;
+        //delete one;
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
+        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        cout << logBuf << endl;
     }
     catch (const char *msg)
     {
@@ -230,6 +239,6 @@ void simpleTests() {
         return;
     }
 
-    //MemoryAllocator::PrintAllocationSummaryReport();
+    //MemoryAllocator::PrintAllocationSummaryReport(logBuf);
     return;
 }

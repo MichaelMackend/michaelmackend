@@ -4,10 +4,13 @@
 #include <map>
 #include <stdexcept>
 #include <vector>
-#include "mallocator11.h"
 #include "poolallocator11.h"
 
-using byte = u_char;
+#if RECORD_CALLSTACKS
+#include "mallocator11.h"
+#endif
+
+using byte = uint8_t;
 
 class BlockAllocator;
 class BackTrace;
@@ -27,8 +30,8 @@ public:
     ~MemoryAllocator();
 
     static void Initialize(std::size_t memory_budget);
-    void* AllocateBlockPage(std::size_t size);
-    void FreeBlockPage(void* p, std::size_t size);
+    void* AllocateBlockPage(std::size_t size, BlockAllocator* ba);
+    void FreeBlockPage(void* p, std::size_t size, BlockAllocator* ba);
     static void PrintAllocationSummaryReport(char* buf);
     static void CheckIntegrity();
 
@@ -47,41 +50,47 @@ public:
     void UnlinkEntirePageListHeaderBlock(PageListHeader* pageToAlloc, PageListHeader* prevPage);
     static std::size_t GetBlockPageAlignedSize(std::size_t size);
     static byte* GetBlockPageAlignedAddress(byte* addr);
+    std::size_t ComputePageSlotIndexForAddress(byte* addr);
+    BlockAllocator* FindBlockAllocatorForAllocatedAddress(byte* addr);
+    void RecordNewPageOwner(byte* addr, std::size_t size, u_char allocatorIndex);
+    void RemovePageOwner(byte* addr, std::size_t size);
 
     friend void *operator new(size_t t);
     friend void operator delete(void* p) noexcept;
     void PrintAddressAllocCallStack(void* p);
     void* Alloc(size_t size);
     void Free(void* p);
+    bool Initialized();
 
     BlockAllocator *mBlockAllocators;
     std::size_t* mBlockSizeLookupTable;
     std::size_t mMaxBlockSize;
+    std::size_t mNumBlockSizes;
     
     std::size_t mTotalMemoryBudget;
     std::size_t mRemainingMemory;
     byte* mAllocatedPool;
     byte* mMemoryPool;
-    PageListHeader* mFreeMemoryList;
-    
+    PageListHeader* mFreePageHead;
+    PageListHeader* mPageHeaderList;
+ 
+#if RECORD_CALLSTACKS
     typedef std::map<std::size_t,
                          BackTrace,
                          std::less<std::size_t>,
                          Mallocator11<std::pair<const std::size_t, BackTrace>>>
             BackTraceMap;
 
-#if RECORD_CALLSTACKS
+
     BackTraceMap mAllocatedPtrBackTraceMap;
 #endif
 
     static const unsigned int ALLOC_TABLE_HASH_SIZE = 104729;
 
-    typedef std::map<std::size_t, 
-                    BlockAllocator*, 
-                    std::less<std::size_t>, 
-                    PoolAllocator11<std::pair<const std::size_t, BlockAllocator*> > > BlockAllocationMap;
-
-    BlockAllocationMap* mAllocationRecords;
+    u_char* mAllocatorPageMap;
+    std::size_t mNumPageMapSlots;
+    std::size_t mPageSlotMemorySize;
+    
 };
 
 #endif // MEMORYALLOCATOR_H
