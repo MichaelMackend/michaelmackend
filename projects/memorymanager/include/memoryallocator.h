@@ -90,7 +90,6 @@ public:
     u_char* mAllocatorPageMap;
     std::size_t mNumPageMapSlots;
     std::size_t mPageSlotMemorySize;
-    
 };
 
 #endif // MEMORYALLOCATOR_H

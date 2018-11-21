@@ -46,7 +46,8 @@ struct Y {
 
 void simpleTests();
 void threadTests();
-void allocatorThread(const bool* quit);
+void allocatorThread(const bool* quit, int* opCount);
+void timerThread(const bool* quit, int* ops);
 void arrayTests();
 
 int main(int argc, char *argv[])
@@ -74,21 +75,37 @@ void arrayTests() {
     return;
 }
 
+#define NUM_THREADS 4
+
 void threadTests() {
-    MemoryAllocator::Initialize(GIGABYTE);
+    
     bool quit = false;
     cout << "running...";
-    std::thread t(allocatorThread, &quit);
+    MemoryAllocator::Initialize(100 * MEGABYTE);
+    int ops[NUM_THREADS] = {0};
+    std::list<std::thread> threads;
+    for(int i = 0; i < NUM_THREADS; ++i) {
+        threads.push_back(std::thread(allocatorThread, &quit, &(ops[i])));
+    }
+
+    threads.push_back(std::thread(timerThread, &quit, ops));
+    
+    //std::thread t(allocatorThread, &quit, );
     cin.get();
     quit = true;
-    t.join();
+    //t.join();
+    auto thread_iter = threads.begin();
+    while(thread_iter != threads.end()) {
+        thread_iter->join();
+        thread_iter++;
+    }
     cout << "done\n";
     return;
 }
 
-#define ALLOC_SLOTS 10
-#define MIN_ALLOC 4
-#define MAX_ALLOC 4
+#define ALLOC_SLOTS 800
+#define MIN_ALLOC 512
+#define MAX_ALLOC 1024
 
 void printMemSummary(char* logBuf, long long allocated) {
     MemoryAllocator::PrintAllocationSummaryReport(logBuf);
@@ -97,15 +114,37 @@ void printMemSummary(char* logBuf, long long allocated) {
 }
 
 template <typename unit, typename startType>
-void printTimeSummary(startType start, double iter)
+void printTimeSummary(startType start, startType finish, double iter)
 {
     //using unit = std::chrono::milliseconds;
-    auto finish = std::chrono::high_resolution_clock::now();
+    //auto finish = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<unit>(finish - start).count();
-    std::cout << "perf: " << duration / iter << std::endl;
+    std::cout << std::fixed << "perf: " << duration / iter << std::endl;
 }
 
-void allocatorThread(const bool *quit)
+void timerThread(const bool* quit, int* ops) {
+    using unit = std::chrono::milliseconds;
+    auto start = std::chrono::high_resolution_clock::now();
+    auto lastCheck = start;
+    while(!*quit) {
+        long long opCount = 0;
+        for(int i = 0; i < NUM_THREADS; ++i) {
+            opCount += ops[i];
+        }
+        
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<unit>(now - lastCheck).count();
+        if ((duration >= 2000))
+        {
+            //std::cout << "Update with " << opCount << " ops!" << std::endl;
+            lastCheck = now;
+            printTimeSummary<unit>(start, now, (double)opCount);
+            //printMemSummary(logBuf, allocated);
+        }
+    }
+}
+
+void allocatorThread(const bool *quit, int* opCount)
 {
     //int ids[10000];
     //int mems[10000];
@@ -113,8 +152,11 @@ void allocatorThread(const bool *quit)
     std::mt19937 mt(0);
     std::uniform_int_distribution<int> slot(0, ALLOC_SLOTS - 1);
     std::uniform_int_distribution<int> mem(MIN_ALLOC, MAX_ALLOC);
+    
+    
 
-    int *allocs[ALLOC_SLOTS] = {nullptr};
+    char *allocs[ALLOC_SLOTS] = {nullptr};
+    long long mems[ALLOC_SLOTS] = {-1};
     int allocations = 0;
     bool done = false;
     int countdown = 4;
@@ -123,24 +165,25 @@ void allocatorThread(const bool *quit)
     auto start = std::chrono::high_resolution_clock::now();
     std::size_t allocated = 0;
     char logBuf[512] = {'\0'};
+    
     while (!done)
     {
         int i = slot(mt);
-        int size = mem(mt);
+        
         ++iter;
         if(allocs[i] != nullptr) {
-            allocated -= size;
+            allocated -= mems[i];
+            mems[i] = -1;
             delete[] allocs[i];
             allocs[i] = nullptr;
         } else {
+            int size = mem(mt);
             allocated += size;
-            allocs[i] = new int[size];
+            allocs[i] = new char[size];
+            mems[i] = size;
         }
-        
-        if((iter % 1) == 0) {
-            //printTimeSummary<unit>(start, (double)iter);
-            printMemSummary(logBuf, allocated);
-        }
+        *opCount += 1;
+        //cout << std::this_thread::get_id() << endl;
     }
 }
 
