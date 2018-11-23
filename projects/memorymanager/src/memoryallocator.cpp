@@ -9,6 +9,14 @@
 #include <cstdlib>
 #include "memoryallocator.h"
 #include <stdio.h>
+#include <thread>
+#include <mutex>
+#include <assert.h>
+//#include <stdint.h>
+#include <cstring>
+#include <cstdint>
+#include <limits.h>
+
 
 //#define OVERLOAD_GLOBAL_NEW_DELETE
 
@@ -298,7 +306,9 @@ size_t MemoryAllocator::GetBlockPageAlignedSize(size_t size)
 }
 
 byte* MemoryAllocator::GetBlockPageAlignedAddress(byte* addr) {
-    return addr + (reinterpret_cast<long long>(addr) % BLOCK_PAGE_ALIGNMENT);
+    std::size_t addrVal = reinterpret_cast<std::size_t>(addr);
+    std::size_t blockAlignmentPadding = (BLOCK_PAGE_ALIGNMENT - (addrVal % BLOCK_PAGE_ALIGNMENT)) % BLOCK_PAGE_ALIGNMENT;
+    return addr + blockAlignmentPadding;
 }
 
 size_t MemoryAllocator::ComputePageSlotIndexForAddress(byte* addr) {
@@ -449,7 +459,7 @@ void MemoryAllocator::FreeBlockPage(void *p, std::size_t requestedSize, BlockAll
 }
 
 void MemoryAllocator::PrintAllocationSummaryReport(char* buf) {
-    long long freeMemoryTotal = 0;
+    std::size_t freeMemoryTotal = 0;
     PageListHeader* ph = __a.mFreePageHead;
     while(ph) {
         freeMemoryTotal += ph->mPageSize;
@@ -457,7 +467,7 @@ void MemoryAllocator::PrintAllocationSummaryReport(char* buf) {
     }
     long long remaining = __a.mTotalMemoryBudget - freeMemoryTotal;
     //std::cout << "free page memory (" << 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget << "%): " << freeMemoryTotal << "/" << __a.mTotalMemoryBudget << "\n";
-    sprintf(buf, "free page memory %lu bytes, free: %d/%lu (%fpct)\n", remaining, freeMemoryTotal, __a.mTotalMemoryBudget, 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget);
+    sprintf(buf, "free page memory %lu bytes, free: %lu/%lu (%fpct)\n", remaining, freeMemoryTotal, __a.mTotalMemoryBudget, 100.0 * (double)freeMemoryTotal / (double)__a.mTotalMemoryBudget);
 }
 
 void MemoryAllocator::CheckIntegrity() {

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage=$(echo "./mmnew.sh [cpp] [service] [target folder]")
+usage=$(echo "./mmnew.sh [cpp] [service|app] [target folder]")
 
 if [ $# -ne 3 ]; then
     echo $usage

@@ -1,1 +1,1 @@
-makers/Makefile-release.clang
+makers/Makefile.gcc

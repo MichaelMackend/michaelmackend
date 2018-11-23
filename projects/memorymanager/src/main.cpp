@@ -120,6 +120,7 @@ void printTimeSummary(startType start, startType finish, double iter)
     //auto finish = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<unit>(finish - start).count();
     std::cout << std::fixed << "perf: " << duration / iter << std::endl;
+    flush(cout);
 }
 
 void timerThread(const bool* quit, int* ops) {
