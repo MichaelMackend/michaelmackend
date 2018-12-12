@@ -75,7 +75,7 @@ void arrayTests() {
     return;
 }
 
-#define NUM_THREADS 4
+#define NUM_THREADS 1
 
 void threadTests() {
     
@@ -118,7 +118,7 @@ void printTimeSummary(startType start, startType finish, double iter)
 {
     //using unit = std::chrono::milliseconds;
     //auto finish = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<unit>(finish - start).count();
+    auto duration = NUM_THREADS * std::chrono::duration_cast<unit>(finish - start).count();
     std::cout << std::fixed << "perf: " << duration / iter << std::endl;
     flush(cout);
 }

@@ -18,7 +18,7 @@
 #include <limits.h>
 
 
-//#define OVERLOAD_GLOBAL_NEW_DELETE
+#define OVERLOAD_GLOBAL_NEW_DELETE
 
 
 using byte = uint8_t;
@@ -495,7 +495,7 @@ MemoryAllocator::~MemoryAllocator() {
 }
 
 void* MemoryAllocator::Alloc(size_t size) {
-    std::unique_lock<std::mutex> lock(mtx);
+    //std::unique_lock<std::mutex> lock(mtx);
     if(!Initialized()) {
         return malloc(size);
     }
@@ -521,7 +521,7 @@ void* MemoryAllocator::Alloc(size_t size) {
 }
 
 void MemoryAllocator::Free(void* p) {
-    std::unique_lock<std::mutex> lock(mtx);
+   // std::unique_lock<std::mutex> lock(mtx);
     if(!Initialized()) {
         return free(p);
     }
