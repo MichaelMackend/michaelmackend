@@ -12,7 +12,6 @@
 #include <thread>
 #include <mutex>
 #include <assert.h>
-//#include <stdint.h>
 #include <cstring>
 #include <cstdint>
 #include <limits.h>
@@ -256,7 +255,7 @@ void MemoryAllocator::InitializeBlockAllocators() {
 }
 
 //O(N) search. todo: consider upgrading to a tree based structure if possible
-PageListHeader* MemoryAllocator::FindMemoryBlockPageForSize(size_t size, PageListHeader** outPrevPage) {
+PageListHeader* MemoryAllocator::FindMemoryBlockPageForSize(size_t size, PageListHeader** outPrevPage) const {
     PageListHeader* prev = nullptr;
     PageListHeader* ph = mFreePageHead;
     const size_t sizeNeeded = size + sizeof(PageListHeader);
@@ -311,13 +310,13 @@ byte* MemoryAllocator::GetBlockPageAlignedAddress(byte* addr) {
     return addr + blockAlignmentPadding;
 }
 
-size_t MemoryAllocator::ComputePageSlotIndexForAddress(byte* addr) {
+size_t MemoryAllocator::ComputePageSlotIndexForAddress(byte* addr) const {
     ptrdiff_t addrOffset = addr - mMemoryPool;
     size_t pageSlotIndex = addrOffset / mPageSlotMemorySize;
     return pageSlotIndex;
 }
 
-BlockAllocator* MemoryAllocator::FindBlockAllocatorForAllocatedAddress(byte* addr) {
+BlockAllocator* MemoryAllocator::FindBlockAllocatorForAllocatedAddress(byte* addr) const {
     size_t pageSlotIndex = ComputePageSlotIndexForAddress(addr);
     u_char blockAllocatorIndex = mAllocatorPageMap[pageSlotIndex];
     if(blockAllocatorIndex >= mNumBlockSizes) {
@@ -343,7 +342,7 @@ void MemoryAllocator::RemovePageOwner(byte* addr, std::size_t size) {
 //[rrrrrrr   ] 7
 //[       ppp] 
 
-bool MemoryAllocator::AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize){
+bool MemoryAllocator::AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize) const {
     return (pageToAlloc->mPageSize - requestedSize) >= sizeof(PageListHeader);
 }
 
@@ -388,7 +387,7 @@ bool MemoryAllocator::AddressIsBlockPageAligned(void* p) const
     return (reinterpret_cast<std::size_t>(p) % BLOCK_PAGE_ALIGNMENT) == 0;
 }
 
-PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void* p) {
+PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void* p) const {
     if(!AddressIsInMemoryPool(p)) {
         return nullptr;
     }
@@ -541,11 +540,11 @@ void MemoryAllocator::Free(void* p) {
     mtx.unlock();
 }
 
-bool MemoryAllocator::Initialized() {
+bool MemoryAllocator::Initialized() const {
     return mMemoryPool != nullptr;
 }
 
-void MemoryAllocator::PrintAddressAllocCallStack(void* p) {
+void MemoryAllocator::PrintAddressAllocCallStack(void* p) const {
 #if RECORD_CALLSTACKS
     std::cout << "ADDRESS " << p << " ALLOCATED AT: \n";
     auto mapIter = mAllocatedPtrBackTraceMap.find(reinterpret_cast<std::size_t>(p));

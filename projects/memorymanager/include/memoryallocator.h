@@ -3,8 +3,6 @@
 #include <utility>
 #include <map>
 #include <stdexcept>
-#include <vector>
-#include "poolallocator11.h"
 
 #if RECORD_CALLSTACKS
 #include "mallocator11.h"
@@ -28,39 +26,40 @@ class MemoryAllocator
 public:
     MemoryAllocator();
     ~MemoryAllocator();
-
     static void Initialize(std::size_t memory_budget);
-    void* AllocateBlockPage(std::size_t size, BlockAllocator* ba);
-    void FreeBlockPage(void* p, std::size_t size, BlockAllocator* ba);
     static void PrintAllocationSummaryReport(char* buf);
     static void CheckIntegrity();
 
-  private:
+private:
+    friend void *operator new(size_t t);
+    friend void operator delete(void* p) noexcept;
+
+    void* Alloc(size_t size);
+    void Free(void* p);
+    void* AllocateBlockPage(std::size_t size, BlockAllocator* ba);
+    void FreeBlockPage(void* p, std::size_t size, BlockAllocator* ba);
     void InitializeWithMemoryBudget(std::size_t memory_budget);
     void InitializeBlockAllocators();
     void InitializeMemoryPool(std::size_t memory_budget);
-    PageListHeader* FindMemoryBlockPageForSize(size_t size, PageListHeader **outPrevPage);
-    PageListHeader* FindPrevMemoryBlockPageLocationForAddress(void* p);
+    void InsertNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize, PageListHeader* prevPage);
+    void UnlinkEntirePageListHeaderBlock(PageListHeader* pageToAlloc, PageListHeader* prevPage);
+    void RecordNewPageOwner(byte* addr, std::size_t size, u_char allocatorIndex);
+    void RemovePageOwner(byte* addr, std::size_t size);
+
+    static std::size_t GetBlockPageAlignedSize(std::size_t size);
+    static byte* GetBlockPageAlignedAddress(byte* addr);
+
+    void PrintAddressAllocCallStack(void* p) const;
+    bool Initialized() const;
+    std::size_t ComputePageSlotIndexForAddress(byte* addr) const;
+    BlockAllocator* FindBlockAllocatorForAllocatedAddress(byte* addr) const;
     bool PageIsAdjacentToPreviousPage(PageListHeader* page, PageListHeader* prevPage) const;
     bool TryJoinPages(PageListHeader* startPage, PageListHeader* pageToAppend) const;
     bool AddressIsInMemoryPool(void* p) const;
     bool AddressIsBlockPageAligned(void* p) const;
-    bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize);
-    void InsertNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize, PageListHeader* prevPage);
-    void UnlinkEntirePageListHeaderBlock(PageListHeader* pageToAlloc, PageListHeader* prevPage);
-    static std::size_t GetBlockPageAlignedSize(std::size_t size);
-    static byte* GetBlockPageAlignedAddress(byte* addr);
-    std::size_t ComputePageSlotIndexForAddress(byte* addr);
-    BlockAllocator* FindBlockAllocatorForAllocatedAddress(byte* addr);
-    void RecordNewPageOwner(byte* addr, std::size_t size, u_char allocatorIndex);
-    void RemovePageOwner(byte* addr, std::size_t size);
-
-    friend void *operator new(size_t t);
-    friend void operator delete(void* p) noexcept;
-    void PrintAddressAllocCallStack(void* p);
-    void* Alloc(size_t size);
-    void Free(void* p);
-    bool Initialized();
+    PageListHeader* FindMemoryBlockPageForSize(size_t size, PageListHeader **outPrevPage) const;
+    PageListHeader* FindPrevMemoryBlockPageLocationForAddress(void* p) const;
+    bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize) const;
 
     BlockAllocator *mBlockAllocators;
     std::size_t* mBlockSizeLookupTable;
@@ -84,8 +83,6 @@ public:
 
     BackTraceMap mAllocatedPtrBackTraceMap;
 #endif
-
-    static const unsigned int ALLOC_TABLE_HASH_SIZE = 104729;
 
     u_char* mAllocatorPageMap;
     std::size_t mNumPageMapSlots;
