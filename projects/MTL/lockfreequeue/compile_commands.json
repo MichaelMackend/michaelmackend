@@ -1,7 +1,7 @@
 [
     {
-        "command": "c++ -c -std=c++11 -g -I include -o build/main.o /home/michael/Projects/michaelmackend/projects/MTL/lockfreequeue/src/main.cpp",
+        "command": "c++ -c -std=c++11 -g -I include -o build/spinlock.o /home/michael/Projects/michaelmackend/projects/MTL/lockfreequeue/src/spinlock.cpp",
         "directory": "/home/michael/Projects/michaelmackend/projects/MTL/lockfreequeue",
-        "file": "/home/michael/Projects/michaelmackend/projects/MTL/lockfreequeue/src/main.cpp"
+        "file": "/home/michael/Projects/michaelmackend/projects/MTL/lockfreequeue/src/spinlock.cpp"
     }
 ]
