@@ -1,20 +1,5 @@
 [
     {
-        "command": "c++ -c -std=c++11 -g -I include -o build/main.o /home/michael/Projects/michaelmackend/projects/memorymanager/src/main.cpp",
-        "directory": "/home/michael/Projects/michaelmackend/projects/memorymanager",
-        "file": "/home/michael/Projects/michaelmackend/projects/memorymanager/src/main.cpp"
-    },
-    {
-        "command": "c++ -c -std=c++11 -g -I include -o build/backtrace.o /home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp",
-        "directory": "/home/michael/Projects/michaelmackend/projects/memorymanager",
-        "file": "/home/michael/Projects/michaelmackend/projects/memorymanager/src/backtrace.cpp"
-    },
-    {
-        "command": "c++ -c -std=c++11 -g -I include -o build/bar.o /home/michael/Projects/michaelmackend/projects/memorymanager/src/bar.cpp",
-        "directory": "/home/michael/Projects/michaelmackend/projects/memorymanager",
-        "file": "/home/michael/Projects/michaelmackend/projects/memorymanager/src/bar.cpp"
-    },
-    {
         "command": "c++ -c -std=c++11 -g -I include -o build/memoryallocator.o /home/michael/Projects/michaelmackend/projects/memorymanager/src/memoryallocator.cpp",
         "directory": "/home/michael/Projects/michaelmackend/projects/memorymanager",
         "file": "/home/michael/Projects/michaelmackend/projects/memorymanager/src/memoryallocator.cpp"

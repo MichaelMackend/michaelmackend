@@ -48,18 +48,18 @@ private:
 
     static std::size_t GetBlockPageAlignedSize(std::size_t size);
     static byte* GetBlockPageAlignedAddress(byte* addr);
+    static bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize);
+    static bool AddressIsBlockPageAligned(void* p);
+    static bool PageIsAdjacentToPreviousPage(PageListHeader* page, PageListHeader* prevPage);
+    static bool TryJoinPages(PageListHeader* startPage, PageListHeader* pageToAppend);
 
     void PrintAddressAllocCallStack(void* p) const;
     bool Initialized() const;
     std::size_t ComputePageSlotIndexForAddress(byte* addr) const;
     BlockAllocator* FindBlockAllocatorForAllocatedAddress(byte* addr) const;
-    bool PageIsAdjacentToPreviousPage(PageListHeader* page, PageListHeader* prevPage) const;
-    bool TryJoinPages(PageListHeader* startPage, PageListHeader* pageToAppend) const;
     bool AddressIsInMemoryPool(void* p) const;
-    bool AddressIsBlockPageAligned(void* p) const;
     PageListHeader* FindMemoryBlockPageForSize(size_t size, PageListHeader **outPrevPage) const;
     PageListHeader* FindPrevMemoryBlockPageLocationForAddress(void* p) const;
-    bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize) const;
 
     BlockAllocator *mBlockAllocators;
     std::size_t* mBlockSizeLookupTable;

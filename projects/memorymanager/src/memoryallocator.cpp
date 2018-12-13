@@ -336,19 +336,9 @@ void MemoryAllocator::RemovePageOwner(byte* addr, std::size_t size) {
     return RecordNewPageOwner(addr, size, std::numeric_limits<u_char>::max());
 }
 
-// [spe
-
-//[          ] 10
-//[rrrrrrr   ] 7
-//[       ppp] 
-
-bool MemoryAllocator::AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize) const {
+bool MemoryAllocator::AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize) {
     return (pageToAlloc->mPageSize - requestedSize) >= sizeof(PageListHeader);
 }
-
-//[          ] 10
-// 0123456789
-//[       ppp]
 
 void MemoryAllocator::InsertNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize, PageListHeader *prevPage){
     PageListHeader *newFreeBlock = new (reinterpret_cast<byte *>(pageToAlloc) + requestedSize) PageListHeader;
@@ -382,7 +372,7 @@ bool MemoryAllocator::AddressIsInMemoryPool(void *p) const
     return p >= mMemoryPool && (p < (mMemoryPool + mTotalMemoryBudget));
 }
 
-bool MemoryAllocator::AddressIsBlockPageAligned(void* p) const 
+bool MemoryAllocator::AddressIsBlockPageAligned(void* p)
 {
     return (reinterpret_cast<std::size_t>(p) % BLOCK_PAGE_ALIGNMENT) == 0;
 }
@@ -404,7 +394,7 @@ PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void*
     return nullptr;
 }
 
-bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) const {
+bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) {
     if(page == nullptr || prevPage == nullptr) {
         return false;
     }
@@ -412,7 +402,7 @@ bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageLis
     return (reinterpret_cast<byte*>(prevPage) + prevPage->mPageSize) == reinterpret_cast<byte*>(page);
 }
 
-bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) const {
+bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) {
     if(PageIsAdjacentToPreviousPage(pageToAppend, startPage)) {
         startPage->mPageSize += pageToAppend->mPageSize;
         startPage->SetNextPage(pageToAppend->NextPage());
