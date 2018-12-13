@@ -19,9 +19,7 @@
 
 #define OVERLOAD_GLOBAL_NEW_DELETE
 
-
 using byte = uint8_t;
-
 
 const unsigned long BYTE     = 1;
 const unsigned long KILOBYTE = 1024;
@@ -33,7 +31,12 @@ const std::size_t MEMORY_POOL_ALIGNMENT = 64;
 const std::size_t BLOCK_PAGE_ALIGNMENT = 64;
 const std::size_t BLOCKS_PER_PAGE = 64;
 
-std::mutex mtx; // mutex for critical section
+size_t GetBlockPageAlignedSize(size_t size);
+byte* GetBlockPageAlignedAddress(byte* addr);
+bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader* pageToAlloc, std::size_t requestedSize);
+bool AddressIsBlockPageAligned(void* p);
+bool PageIsAdjacentToPreviousPage(PageListHeader* page, PageListHeader* prevPage);
+bool TryJoinPages(PageListHeader* startPage, PageListHeader* pageToAppend);
 
 struct PageHeader {
     PageHeader()
@@ -123,9 +126,6 @@ private:
     byte* mMemoryAllocatorPoolStartAddress;
 };
 
-/*
-[[ph][[bh]b][[bh]b][[bh]b][[bh]b][[bh]b][[bh]b][[bh]b]]
-*/
 class BlockAllocator
 {
     friend class MemoryAllocator;
@@ -298,13 +298,13 @@ void* MemoryAllocator::AllocateBlockPage(std::size_t requestedSize, BlockAllocat
 
 //[62] 
 
-size_t MemoryAllocator::GetBlockPageAlignedSize(size_t size)
+size_t GetBlockPageAlignedSize(size_t size)
 {
     std::size_t blockAlignmentPadding = (BLOCK_PAGE_ALIGNMENT - (size % BLOCK_PAGE_ALIGNMENT)) % BLOCK_PAGE_ALIGNMENT;
     return size + blockAlignmentPadding;
 }
 
-byte* MemoryAllocator::GetBlockPageAlignedAddress(byte* addr) {
+byte* GetBlockPageAlignedAddress(byte* addr) {
     std::size_t addrVal = reinterpret_cast<std::size_t>(addr);
     std::size_t blockAlignmentPadding = (BLOCK_PAGE_ALIGNMENT - (addrVal % BLOCK_PAGE_ALIGNMENT)) % BLOCK_PAGE_ALIGNMENT;
     return addr + blockAlignmentPadding;
@@ -336,7 +336,7 @@ void MemoryAllocator::RemovePageOwner(byte* addr, std::size_t size) {
     return RecordNewPageOwner(addr, size, std::numeric_limits<u_char>::max());
 }
 
-bool MemoryAllocator::AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize) {
+bool AllocatedPageHasEnoughSpaceForNewPageListHeaderBlock(PageListHeader *pageToAlloc, std::size_t requestedSize) {
     return (pageToAlloc->mPageSize - requestedSize) >= sizeof(PageListHeader);
 }
 
@@ -372,7 +372,7 @@ bool MemoryAllocator::AddressIsInMemoryPool(void *p) const
     return p >= mMemoryPool && (p < (mMemoryPool + mTotalMemoryBudget));
 }
 
-bool MemoryAllocator::AddressIsBlockPageAligned(void* p)
+bool AddressIsBlockPageAligned(void* p)
 {
     return (reinterpret_cast<std::size_t>(p) % BLOCK_PAGE_ALIGNMENT) == 0;
 }
@@ -394,7 +394,7 @@ PageListHeader* MemoryAllocator::FindPrevMemoryBlockPageLocationForAddress(void*
     return nullptr;
 }
 
-bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) {
+bool PageIsAdjacentToPreviousPage(PageListHeader *page, PageListHeader *prevPage) {
     if(page == nullptr || prevPage == nullptr) {
         return false;
     }
@@ -402,7 +402,7 @@ bool MemoryAllocator::PageIsAdjacentToPreviousPage(PageListHeader *page, PageLis
     return (reinterpret_cast<byte*>(prevPage) + prevPage->mPageSize) == reinterpret_cast<byte*>(page);
 }
 
-bool MemoryAllocator::TryJoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) {
+bool TryJoinPages(PageListHeader *startPage, PageListHeader *pageToAppend) {
     if(PageIsAdjacentToPreviousPage(pageToAppend, startPage)) {
         startPage->mPageSize += pageToAppend->mPageSize;
         startPage->SetNextPage(pageToAppend->NextPage());
@@ -484,7 +484,6 @@ MemoryAllocator::~MemoryAllocator() {
 }
 
 void* MemoryAllocator::Alloc(size_t size) {
-    //std::unique_lock<std::mutex> lock(mtx);
     if(!Initialized()) {
         return malloc(size);
     }
@@ -510,7 +509,6 @@ void* MemoryAllocator::Alloc(size_t size) {
 }
 
 void MemoryAllocator::Free(void* p) {
-   // std::unique_lock<std::mutex> lock(mtx);
     if(!Initialized()) {
         return free(p);
     }
@@ -527,7 +525,6 @@ void MemoryAllocator::Free(void* p) {
         PrintAddressAllocCallStack(p);
         throw msg;
     }
-    mtx.unlock();
 }
 
 bool MemoryAllocator::Initialized() const {
@@ -555,7 +552,7 @@ BlockAllocator::BlockAllocator( MemoryAllocator* memAllocator, size_t indexInMem
     , mPageTail(nullptr)
     , mBlockSize(block_size)
     , mPageSize(std::min(64 * block_size, page_maxSize))
-    , mAllocatedPageSize(MemoryAllocator::GetBlockPageAlignedSize(mPageSize + sizeof(PageHeader)))
+    , mAllocatedPageSize(GetBlockPageAlignedSize(mPageSize + sizeof(PageHeader)))
     , mBlocksPerPage(mPageSize / mBlockSize)
 {
     mMemoryAllocatorPoolStartAddress = mMemoryAllocator->mMemoryPool;
