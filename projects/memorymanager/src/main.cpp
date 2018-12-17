@@ -1,5 +1,5 @@
-#include<iostream>
-#include<stdlib.h>
+#include <iostream>
+#include <stdlib.h>
 #include "bar.h"
 #include <list>
 #include <unistd.h>
@@ -7,8 +7,10 @@
 #include <random>
 
 #include "memoryallocator.h"
+#include "singletonallocator.h"
 
 using namespace std;
+using namespace memtek::memory;
 
 const unsigned long KILOBYTE = 1024;
 const unsigned long MEGABYTE = 1024 * KILOBYTE;
@@ -20,24 +22,28 @@ const unsigned long HUNDREDTH_OF_A_SECOND = 10000;
 class Foo
 {
   public:
-    Foo(int x, int y) : mX(x), mY(y) {
+    Foo(int x, int y) : mX(x), mY(y)
+    {
         std::cout << "Foo CTOR with x:" << mX << " y:" << mY << std::endl;
     }
     int mX;
     int mY;
-    void print() {
+    void print()
+    {
         std::cout << "foo is at " << this << " with X:" << mX << " Y: " << mY << std::endl;
     }
 };
 
-struct X {
+struct X
+{
     char a;
     int b;
     char c;
     int d;
 };
 
-struct Y {
+struct Y
+{
     int b;
     int d;
     char a;
@@ -46,8 +52,8 @@ struct Y {
 
 void simpleTests();
 void threadTests();
-void allocatorThread(const bool* quit, int* opCount);
-void timerThread(const bool* quit, int* ops);
+void allocatorThread(const bool *quit, int *opCount);
+void timerThread(const bool *quit, int *ops);
 void arrayTests();
 
 int main(int argc, char *argv[])
@@ -57,15 +63,16 @@ int main(int argc, char *argv[])
     //arrayTests();
 }
 
-void arrayTests() {
+void arrayTests()
+{
     cout << "start array tests...\n";
-    MemoryAllocator::Initialize(100 * KILOBYTE);
+    SingletonAllocator::instance().Initialize(100 * KILOBYTE);
 
     cout << "allocate arrays...\n";
-    int* array1 = new int[10];
-    int* array2 = new int[20];
-    int* array3 = new int[30];
-    
+    int *array1 = new int[10];
+    int *array2 = new int[20];
+    int *array3 = new int[30];
+
     cout << "deallocate arrays...\n";
     delete[] array1;
     delete[] array2;
@@ -77,25 +84,28 @@ void arrayTests() {
 
 #define NUM_THREADS 1
 
-void threadTests() {
-    
+void threadTests()
+{
+
     bool quit = false;
     cout << "running...";
-    MemoryAllocator::Initialize(100 * MEGABYTE);
+    SingletonAllocator::instance().Initialize(100 * MEGABYTE);
     int ops[NUM_THREADS] = {0};
     std::list<std::thread> threads;
-    for(int i = 0; i < NUM_THREADS; ++i) {
+    for (int i = 0; i < NUM_THREADS; ++i)
+    {
         threads.push_back(std::thread(allocatorThread, &quit, &(ops[i])));
     }
 
     threads.push_back(std::thread(timerThread, &quit, ops));
-    
+
     //std::thread t(allocatorThread, &quit, );
     cin.get();
     quit = true;
     //t.join();
     auto thread_iter = threads.begin();
-    while(thread_iter != threads.end()) {
+    while (thread_iter != threads.end())
+    {
         thread_iter->join();
         thread_iter++;
     }
@@ -107,8 +117,9 @@ void threadTests() {
 #define MIN_ALLOC 512
 #define MAX_ALLOC 1024
 
-void printMemSummary(char* logBuf, long long allocated) {
-    MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+void printMemSummary(char *logBuf, long long allocated)
+{
+    SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
     cout << "for " << allocated << " bytes: " << logBuf;
     flush(cout);
 }
@@ -123,16 +134,19 @@ void printTimeSummary(startType start, startType finish, double iter)
     flush(cout);
 }
 
-void timerThread(const bool* quit, int* ops) {
+void timerThread(const bool *quit, int *ops)
+{
     using unit = std::chrono::milliseconds;
     auto start = std::chrono::high_resolution_clock::now();
     auto lastCheck = start;
-    while(!*quit) {
+    while (!*quit)
+    {
         long long opCount = 0;
-        for(int i = 0; i < NUM_THREADS; ++i) {
+        for (int i = 0; i < NUM_THREADS; ++i)
+        {
             opCount += ops[i];
         }
-        
+
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<unit>(now - lastCheck).count();
         if ((duration >= 2000))
@@ -140,12 +154,11 @@ void timerThread(const bool* quit, int* ops) {
             //std::cout << "Update with " << opCount << " ops!" << std::endl;
             lastCheck = now;
             printTimeSummary<unit>(start, now, (double)opCount);
-            //printMemSummary(logBuf, allocated);
         }
     }
 }
 
-void allocatorThread(const bool *quit, int* opCount)
+void allocatorThread(const bool *quit, int *opCount)
 {
     //int ids[10000];
     //int mems[10000];
@@ -153,8 +166,6 @@ void allocatorThread(const bool *quit, int* opCount)
     std::mt19937 mt(0);
     std::uniform_int_distribution<int> slot(0, ALLOC_SLOTS - 1);
     std::uniform_int_distribution<int> mem(MIN_ALLOC, MAX_ALLOC);
-    
-    
 
     char *allocs[ALLOC_SLOTS] = {nullptr};
     long long mems[ALLOC_SLOTS] = {-1};
@@ -166,18 +177,21 @@ void allocatorThread(const bool *quit, int* opCount)
     auto start = std::chrono::high_resolution_clock::now();
     std::size_t allocated = 0;
     char logBuf[512] = {'\0'};
-    
+
     while (!done)
     {
         int i = slot(mt);
-        
+
         ++iter;
-        if(allocs[i] != nullptr) {
+        if (allocs[i] != nullptr)
+        {
             allocated -= mems[i];
             mems[i] = -1;
             delete[] allocs[i];
             allocs[i] = nullptr;
-        } else {
+        }
+        else
+        {
             int size = mem(mt);
             allocated += size;
             allocs[i] = new char[size];
@@ -188,12 +202,13 @@ void allocatorThread(const bool *quit, int* opCount)
     }
 }
 
-void simpleTests() {
+void simpleTests()
+{
     try
     {
-        MemoryAllocator::Initialize(GIGABYTE);
+        SingletonAllocator::instance().Initialize(GIGABYTE);
 
-        //MemoryAllocator::PrintAllocationSummaryReport();
+        //SingletonAllocator::instance().PrintAllocationSummaryReport();
 
         int *pInts[3][64] = {nullptr};
         char logBuf[512] = {'\0'};
@@ -206,7 +221,7 @@ void simpleTests() {
             }
         }
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
 
         for (int i = 0; i < 64; ++i)
@@ -214,7 +229,7 @@ void simpleTests() {
             delete pInts[1][i];
         }
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
 
         for (int i = 0; i < 64; ++i)
@@ -222,17 +237,17 @@ void simpleTests() {
             delete pInts[2][i];
         }
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
-        
+
         for (int i = 0; i < 64; ++i)
         {
             delete pInts[0][i];
         }
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
-        
+
         X *x = new X;
         Y *y = new Y;
 
@@ -243,9 +258,9 @@ void simpleTests() {
         delete y;
         //delete y;
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
-        
+
         Foo *foo = new Foo(3, 5);
         foo->print();
         foo->mX = 6;
@@ -255,9 +270,9 @@ void simpleTests() {
         ThingOne *one = bar->CallOne();
         ThingTwo *two = bar->CallTwo();
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
-        
+
         //std::cout << "Foo lists: " << std::endl;
         //std::list<Foo> fooList;
         //fooList.push_back(Foo(3,4));
@@ -266,15 +281,15 @@ void simpleTests() {
         delete foo;
         delete two;
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
-        
+
         delete bar;
         delete one;
 
         //delete one;
 
-        MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+        SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
         cout << logBuf << endl;
     }
     catch (const char *msg)
@@ -283,6 +298,6 @@ void simpleTests() {
         return;
     }
 
-    //MemoryAllocator::PrintAllocationSummaryReport(logBuf);
+    //SingletonAllocator::instance().PrintAllocationSummaryReport(logBuf);
     return;
 }
