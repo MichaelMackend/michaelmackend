@@ -16,6 +16,21 @@
 #include <cstdint>
 #include <limits.h>
 
+#if defined(__GNUC__) || defined(__clang__)
+#define ffsl(x) __builtin_ffsl(x)
+#else
+static int ffsl(ulong val) {
+    if(val == 0) {
+        return 0;
+    }
+    int i = 1;
+    while(i < 32 && (val & i)) {
+        i <<= 1;
+    }
+    return i;
+}
+#endif
+
 
 namespace memtek
 {
@@ -194,7 +209,6 @@ static const size_t kBlockSizes[] =
 
         // 64-increments
         704, 768, 832, 896, 960, 1024
-        
     };
 
 void MemoryAllocator::InitializeWithMemoryBudget(std::size_t memory_budget)
@@ -737,17 +751,17 @@ void *BlockAllocator::Alloc()
         AllocateNewPage();
     }
 
-    int bi = __builtin_ffsl(mPageHead->mFreeBlocks) - 1;
-    uint64_t mask = 1LL << bi;
+    const int bi = ffsl(mPageHead->mFreeBlocks) - 1;
+    const uint64_t mask = 1LL << bi;
     mPageHead->mFreeBlocks &= ~mask;
 
     void *allocatedAddress = mPageHead->blockHead() + (mBlockSize * bi);
 
     if (mPageHead->mFreeBlocks == 0)
     {
-        PageHeader *emptyPage = mPageHead;
-        UnlinkPage(emptyPage);
-        AppendPage(emptyPage);
+        PageHeader *filledPage = mPageHead;
+        UnlinkPage(filledPage);
+        AppendPage(filledPage);
     }
 
     return allocatedAddress;
@@ -756,12 +770,12 @@ void *BlockAllocator::Alloc()
 void BlockAllocator::Free(void *p)
 {
     PageHeader *ph = nullptr;
-    size_t bi = GetBlockIndexForAddress(p, ph);
+    const size_t bi = GetBlockIndexForAddress(p, ph);
     if (bi == -1)
     {
         throw "BlockAllocator::Free received invalid address!";
     }
-    uint64_t mask = 1LL << bi;
+    const uint64_t mask = 1LL << bi;
     if ((ph->mFreeBlocks & mask) != 0)
     {
         throw "BlockAllocator::Free received an unallocated address!";
