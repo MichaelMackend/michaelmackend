@@ -16,18 +16,18 @@
 #include <cstdint>
 #include <limits.h>
 
-#if defined(__GNUC__) || defined(__clang__)
+#if false && (defined(__GNUC__) || defined(__clang__))
 #define ffsl(x) __builtin_ffsl(x)
 #else
 static int ffsl(ulong val) {
     if(val == 0) {
         return 0;
     }
-    int i = 1;
-    while(i < 32 && (val & i)) {
+    long i = 1;
+    while(i < 64 && !(val & i)) {
         i <<= 1;
     }
-    return i;
+    return (int)i;
 }
 #endif
 
