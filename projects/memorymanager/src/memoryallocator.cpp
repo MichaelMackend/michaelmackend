@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <limits.h>
 
-#if false && (defined(__GNUC__) || defined(__clang__))
+#if (defined(__GNUC__) || defined(__clang__))
 #define ffsl(x) __builtin_ffsl(x)
 #else
 static int ffsl(ulong val) {
