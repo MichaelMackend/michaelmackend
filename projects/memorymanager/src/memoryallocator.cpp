@@ -494,7 +494,7 @@ void MemoryAllocator::PrintAllocationSummaryReport(char *buf)
         freeMemoryTotal += ph->mPageSize;
         ph = ph->NextPage();
     }
-    long long remaining = mTotalMemoryBudget - freeMemoryTotal;
+    std::size_t remaining = mTotalMemoryBudget - freeMemoryTotal;
     //std::cout << "free page memory (" << 100.0 * (double)freeMemoryTotal / (double)().mTotalMemoryBudget << "%): " << freeMemoryTotal << "/" << ().mTotalMemoryBudget << "\n";
     sprintf(buf, "free page memory %lu bytes, free: %lu/%lu (%fpct)\n", remaining, freeMemoryTotal, mTotalMemoryBudget, 100.0 * (double)freeMemoryTotal / (double)mTotalMemoryBudget);
 }
