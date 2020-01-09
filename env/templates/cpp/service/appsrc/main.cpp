@@ -3,8 +3,12 @@
 #include <exception>
 #include <string>
 #include <vector>
+#include <thread>
+#define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
+
 #include "nlohmann/json.hpp"
+
 #include "app.h"
 
 using namespace httplib;
@@ -39,17 +43,27 @@ void post(const Request& req, Response& res) {
     }
 }
 
+void serviceThread();
+void researchThread();
+
 int main(void) {
 
     std::cout << "Starting server..." << std::endl;
 
-    Server svr(httplib::HttpVersion::v1_1);
+    std::thread serve(serviceThread);
+    serve.join();
 
-    svr.post("/", post);
-
-    svr.listen("0.0.0.0",80);
+    std::cout << "Exiting..." << std::endl;
 
     return 0;
+}
+
+void serviceThread() {
+    Server svr;
+
+    svr.Post("/", post);
+
+    svr.listen("0.0.0.0",8080);
 }
 
 

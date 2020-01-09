@@ -38,7 +38,7 @@ INCLUDE = -I include
 
 LIBDIR = -L lib
 
-LIB = -lpthread
+LIB = -lpthread -lssl -lcrypto
 
 all : $(SERVER_TARGET) tester
 

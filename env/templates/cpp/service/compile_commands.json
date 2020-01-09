@@ -1,7 +1,0 @@
-[
-    {
-        "command": "c++ -c -std=c++11 -g -I include -o build/main.o /home/michael/Projects/michaelmackend/CtCi/1.1h/appsrc/main.cpp",
-        "directory": "/home/michael/Projects/michaelmackend/CtCi/1.1h",
-        "file": "/home/michael/Projects/michaelmackend/CtCi/1.1h/appsrc/main.cpp"
-    }
-]
