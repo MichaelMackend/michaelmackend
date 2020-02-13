@@ -1,0 +1,17 @@
+#base image
+FROM phusion/baseimage:master
+
+#set up app service with runit
+RUN mkdir /etc/service/app
+COPY scripts/app_start.sh /etc/service/app/run
+RUN chmod +x /etc/service/app/run
+
+#copy everything into the deploy directory
+COPY . /deploy
+
+#set the cwd to deploy (for docker exec -it purposes, mainly)
+WORKDIR /deploy
+
+#call the baseimage my_init script, which starts the container properly.
+CMD ["/sbin/my_init"]
+
