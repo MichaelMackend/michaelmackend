@@ -1,0 +1,1 @@
+## This is the template for a python-based distributed application.
