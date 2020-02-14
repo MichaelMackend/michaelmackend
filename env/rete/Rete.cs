@@ -2,13 +2,13 @@
 
 namespace rete
 {
-    class Program : Command
+    class Rete : Command
     {
         public override string Word { get { return "rete"; } }
 
-        private static readonly Program rete = new Program();
+        private static readonly Rete rete = new Rete();
 
-        static Program() 
+        static Rete() 
         {
             rete.AddCommand<AppCommand>();
             rete.AddCommand<ServiceCommand>();
