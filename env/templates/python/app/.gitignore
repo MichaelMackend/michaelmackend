@@ -1,0 +1,12 @@
+# python
+__pycache__/
+venv/
+
+# vscode
+.vscode/
+
+
+# generic
+bin/
+build/
+

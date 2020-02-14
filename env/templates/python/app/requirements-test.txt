@@ -1,0 +1,10 @@
+#reports test coverage
+coverage==4.0.3
+#style linter
+flake8==2.5.0
+#for mocking data
+mock==1.3.0
+#flake8 dependency
+pyflakes==1.0.0
+#test runner
+pytest==2.8.3
